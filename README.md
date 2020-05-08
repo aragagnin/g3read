@@ -1,72 +1,60 @@
 # g3read
 
-In this folder I collected some python tools to read and do post processing of large Gadget files, to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5.
+These tools give you the possibility to read and do post processing of large Gadget2 and Gadget3 files (including key files),  to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5.
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
 
-## Reading gadget files
+## Read a single Gadget file
 
-To read gadget files, both snapshots and fof/subfind outputs all you need is `g3read.py`.
-This library is a copy  of the <a href="//github.com/pynbody/pynbody"  rel="nofollow">pynbody library</a> Gadget reader.
-I isolated the `GadgetFile` class, fixed it to read fof/sub files,  files with empty blocks and to read the  Magneticum `INFO` block.
+To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody).
 
-The function `read_new` is a port of Klaus `read_new` with a slightly different signature.
+The easiset way to read from a Gadget file is to use the function `read_new` (a clone of Klaus Dolag IDL routine). 
 
-The signature of mine `read_new` is 
+```python
+read_new(filename, blocks, ptypes, center=None, is_snap=False)```
 
-``` read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, center=None, is_snap=False)```
+- `filename`: path of the gadget file
+- `blocks`: block(s) to read. Can be a string or a list of one or more strings (e.g. `"MASS"`, `["MASS"]`, or `["MASS", "POS "]`)
+- `ptypes`: can be an integer  or a list of integers representing the particle type (e.g. `1`, `[1]`, or `[0,1,2,3,4,5]`). Using `-1` euals to asking for all blocks.
+`center`: if set turns on the periodic (PBC) assumpions. 
+- return type depends on the input data: if `blocks` is a list, then the result is a dictionary of array data for each block (see examples below) 
 
-`filename`, `blocks`, `ptypes` contains the file name, one or more blocks and one or more particle type  (usually `0` is gas, `1` is dark matter, `4` stars and `5`  denotes black holes) respectively.
-If `join_ptypes` is set,  all particle type blocks will be concatenated in a new particle type called `-1`.
-If `only_joined_ptypes` is set, only the pseudo particle type `-1` is returned.
-In periodic boxes you can supply  a value of `center`. Note: the positions will **not** be translated of `-center` (and thus centerd on `[0,0,0]`), but they will be centerd on `center`. This parameter is very useful when extracting a single halo near the boundaries and to have all particles close to each other.
-If `is_snap` is false, then the library will avoid some checks on the mass blocks.
-
-
+Example:
 
 ```python
 import g3read
-pos = g3read.read_new("./test/snap_132", "POS ", -1) #the -1 means to select all particles
+mass =  g3read.read_new("./test/snap_132", "MASS", -1) #the -1 means to select all particles
+pos  = g3read.read_new("./test/snap_132", "POS ", -1) 
 x = pos[:,0]
 y = pos[:,1]
-mass =  g3read.read_new("./test/snap_132", "MASS", -1)
 ```
 
-To select nly gas particles do:
+To select only gas particles do:
 
 ```python
 pos_gas =  g3read.read_new("./test/snap_132", "POS ", 0) #the 0 select only gas particles
-x_gas = pos_gas[:,0]
-y_gas = pos_gas[:,1]
-mass_gas =  g3read.read_new("./test/snap_132", "MASS", 0)
 ````
 
-In case you need to read multiple times the same file, you can instantiate a GadgetFile class and refer to it on multiple reads to speed up the reading:
+To select both position and mass of gas and dark matter:
+
+```python
+data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,1]) #the 0 select only gas particles
+pos = data['POS ']
+mass  = data['MASS']
+````
+
+
+In case you need multiple reads and want to save some I/O time,  , you can instantiate a GadgetFile  separately:
 
 ```python
 `f = g3read.GadgetFile("./test/snap_132")
 pos_gas =  f.read_new( "POS ", 0) #the 0 select only gas particles
-x_gas = pos_gas[:,0]
-y_gas = pos_gas[:,1]
+[...]
 mass_gas =  f.read_new("MASS", 0)
 ```
 
-
-Selecting multiple blocks at the same time
-------------------------------------------
-
-You can pass a list of blocks to `read_new` and it will return dictionary with the blocks.
-
-```python
-data =  g3read.read_new("./test/snap_132",.read_new(["POS","MASS"], 0) #the -1 means 
-x_gas = data["POS "][:,0]                             
-y_gas = data["POS "][:,1]                             
-mass_gas =  data["MASS"]
-```
-
-Accessing blocks for different particle types
----------------------------------------------
+##  A complex example
 
 In addition, you can supply to `read_new` a list of particle types and/or a list of blocks.
 If also the list of particle types is present then the return data will be a dictionary over the particle types
@@ -112,23 +100,7 @@ data = f.read_new(blocks=["POS ","VEL ","TEMP","MASS"], ptypes=[0,1,2,3,4,5])
 gas_temp = data["TEMP"][data["PTYPE"]==0] #zero is for gas,1 dm, 4 stars, 5 BH
 ```
 
-Periodic boxes
---------------
-
-Both `read_particles_in_a_box` and `read_new` will take care of adjusting the position of particles in a periodic box so that particles that have a distance from   `center` greater than half-box-size, 
-
-You can call `read_new` with the keyword `center` and it will take care of the periodicity of the box:
-
-```python
-f = g3read.GadgetFile(filename)
-positions = f.read_new(blocks=["POS ","VEL ","TEMP","MASS"], ptypes=[0,1,2,3,4,5], center=[25001., 54500., 12100.])
-
-positions = data["POS "]
-```
-
-
-Writing a blocks back to a (new) file
--------------------------------------
+## Writing  back to a (new) file
 
 The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
 
@@ -174,7 +146,6 @@ x=f["POS "][:,0]
 y=f["POS "][:,1]
 mass =f["MASS"]
 ```
-
 
 
 # Submit a batch of jobs to the c2pap web portal (http://c2papcosmosim.uc.lrz.de/)
@@ -236,3 +207,6 @@ python gadget_to_hdf5.py infile outfile
 In case you need to map names diffrently from the default version, have a look at the source code of `gadget_to_hdf5.py` and edit your own mapping.
 
 
+# Read Gadget files with units
+
+# Create SMAC-like maps from large samples
