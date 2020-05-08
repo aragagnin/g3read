@@ -12,7 +12,8 @@ To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This libr
 The easiset way to read from a Gadget file is to use the function `read_new` (a clone of Klaus Dolag IDL routine). 
 
 ```python
-read_new(filename, blocks, ptypes, center=None, is_snap=False)```
+read_new(filename, blocks, ptypes, center=None, is_snap=False)
+```
 
 - `filename`: path of the gadget file
 - `blocks`: block(s) to read. Can be a string or a list of one or more strings (e.g. `"MASS"`, `["MASS"]`, or `["MASS", "POS "]`)
