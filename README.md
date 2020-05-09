@@ -4,7 +4,6 @@ These tools give you the possibility to read and do post processing of large Gad
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
-
 ## Read a single Gadget file
 
 To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody).
@@ -31,18 +30,26 @@ x = pos[:,0]
 y = pos[:,1]
 ```
 
-To select only gas particles do:
+To select only gas particles:
 
 ```python
 pos_gas =  g3read.read_new("./test/snap_132", "POS ", 0) #the 0 select only gas particles
+````
+
+
+Note the difference if `"POS "` is within a list:
+
+```python
+data =  g3read.read_new("./test/snap_132", ["POS "], 0)  
+pos = data["POS "]
 ````
 
 To select both position and mass of gas and dark matter:
 
 ```python
 data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,1]) #the 0 select only gas particles
-pos = data['POS ']
-mass  = data['MASS']
+pos = data["POS "]
+mass  = data["MASS"]
 ````
 
 
@@ -55,49 +62,11 @@ pos_gas =  f.read_new( "POS ", 0) #the 0 select only gas particles
 mass_gas =  f.read_new("MASS", 0)
 ```
 
-##  A complex example
-
-In addition, you can supply to `read_new` a list of particle types and/or a list of blocks.
-If also the list of particle types is present then the return data will be a dictionary over the particle types
-of the selected one or more blocks.
-
-To use all the previous knowledge, the following code computes the beta value for a cluster extracted via SimCut:
-
-Note that I added the flag `only_join_ptypes=False` in order to access blocks of single particle types. 
-
-```python
-import numpy as np
-import g3read as g3read
-
-filename = "snap_060"
-cut_radius = 801. #consider only particles within this cut
-
-f = g3read.GadgetFile(filename)
-data = f.read_new(blocks=["POS ","VEL ","TEMP","MASS"], ptypes=[0,1,2,3,4,5], only_join_ptypes=False) #dark matter and star particles will have TEMP=NaN
-center = np.average(data["POS "],weights=data["MASS"],axis=0)
-
-#the function 'g.to_spherical()' returns data with columns 0,1,2 being rho,theta,phi
-spherical_cut = g.to_spherical(data["POS "],center)[:,0]<cut_radius
-vel = data["VEL "][spherical_cut]
-T_inside_radius_wnans = data["TEMP"][spherical_cut]
-T_inside_radius = T_inside_radius_wnans[~np.isnan(T_inside_radius_wnans)] #remove all NaNs
-radial_vel = g.to_spherical(data["VEL "],[0.,0.,0.])[:,0]
-
-sigma_vel  = np.sqrt(np.mean(radial_vel**2) - np.mean(radial_vel)**2.)
-meanT = np.mean(T_inside_radius) 
-
-print("sigma velocity [km/s] =  %.1f "%(np.sqrt(sigma_vel)))
-print("mass weighted mean temperature [KeV] = %.2f "%(meanT/1.16e7))
-
-```
-If you need to access also the blocks for single particle-type you can do it in two ways:
-
-1) use the block `PTYPE` (Always added) in the following way:
+Use the block `PTYPE` to filter by particle type:
 
 ```python
 f = g3read.GadgetFile(filename)
 data = f.read_new(blocks=["POS ","VEL ","TEMP","MASS"], ptypes=[0,1,2,3,4,5])
-
 gas_temp = data["TEMP"][data["PTYPE"]==0] #zero is for gas,1 dm, 4 stars, 5 BH
 ```
 
@@ -142,12 +111,41 @@ halo_radii = fof.read("RVIR",0)
 first_halo_position = halo_positions[0]
 first_halo_radius = halo_radii[0]
 
-f = g3read.read_particles_in_box(snapbase,first_halo_position,first_halo_radius,["POS ","MASS"],[0,1,2,3,4,5])
-x=f["POS "][:,0]
-y=f["POS "][:,1]
-mass =f["MASS"]
+f = g3read.read_particles_in_box(snapbase, first_halo_position, first_halo_radius, ["POS ","MASS"], [0,1,2,3,4,5])
+x = f["POS "][:,0]
+y = f["POS "][:,1]
+mass = f["MASS"]
 ```
 
+## High Performance 
+
+The library `g3read` will use [numba](http://numba.pydata.org) if available.
+
+## Working with units of measurements
+
+The library `g3units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`)
+
+In this example we read code-units data and return it in physical units automatically:
+
+```python
+import g3read_units as g3u
+snap_base = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
+units = g3u.get_units(snap_base)
+ureg = units.get_u() #pint ureg
+center = [500.,500.,500.] * ureg.glength  #we give a center in code units 
+distance = 500. * ureg.kpc # distance we give in real kpc
+
+data = g3u.read_particles_in_box(snap_base, center, distance, ["MASS", "POS "], -1):
+mask = ((data["POS "][:,0]-center)<distance) & ((data["POS "][:,1]-center)<distance) ((data["POS "][:,2]-center)<distance)   
+total_mass = np.sum(data["MASS"])
+print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
+``` 
+
+## Maps of large simulations
+
+If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory.
+
+The tool
 
 # Submit a batch of jobs to the c2pap web portal (http://c2papcosmosim.uc.lrz.de/)
 
@@ -209,5 +207,7 @@ In case you need to map names diffrently from the default version, have a look a
 
 
 # Read Gadget files with units
+
+The library `g3units.py` reads 
 
 # Create SMAC-like maps from large samples
