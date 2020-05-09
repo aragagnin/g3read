@@ -1,29 +1,14 @@
-# g3read
 
 These tools give you the possibility to read and do post processing of large Gadget2 and Gadget3 files (including key files),  to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5.
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
 
-Table of Contents
-=================
+# g3read.py: read Gadget and key files
 
-   * [g3read](#g3read)
-      * [Read a single Gadget file](#read-a-single-gadget-file)
-      * [Writing  back to a (new) file](#writing--back-to-a-new-file)
-      * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
-      * [High Performance](#high-performance)
-      * [Working with units of measurements](#working-with-units-of-measurements)
-      * [Maps of large simulations](#maps-of-large-simulations)
-   * [Submit a batch of jobs to the c2pap web portal (<a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>)](#submit-a-batch-of-jobs-to-the-c2pap-web-portal-httpc2papcosmosimuclrzde)
-   * [Convert Gadget2/3 files to HDF5](#convert-gadget23-files-to-hdf5)
-   * [Read Gadget files with units](#read-gadget-files-with-units)
-   * [Create SMAC-like maps from large samples](#create-smac-like-maps-from-large-samples)
-
+To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody). The library `g3read` will use [numba](http://numba.pydata.org) if available.
 
 ## Read a single Gadget file
-
-To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody).
 
 The easiset way to read from a Gadget file is to use the function `read_new` (a clone of Klaus Dolag IDL routine). 
 
@@ -47,21 +32,8 @@ x = pos[:,0]
 y = pos[:,1]
 ```
 
-To select only gas particles:
 
-```python
-pos_gas =  g3read.read_new("./test/snap_132", "POS ", 0) #the 0 select only gas particles
-````
-
-
-Note the difference if `"POS "` is within a list:
-
-```python
-data =  g3read.read_new("./test/snap_132", ["POS "], 0)  
-pos = data["POS "]
-````
-
-To select both position and mass of gas and dark matter:
+To select both position and mass of gas and dark matter (Note the difference if `"POS "` is within a list):
 
 ```python
 data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,1]) #the 0 select only gas particles
@@ -69,14 +41,11 @@ pos = data["POS "]
 mass  = data["MASS"]
 ````
 
-
-In case you need multiple reads and want to save some I/O time,  , you can instantiate a GadgetFile  separately:
+In case you need multiple reads and want to save some I/O time,  , you can instantiate a GadgetFile  separately (note `is_snap=False` when reading a catalog):
 
 ```python
-`f = g3read.GadgetFile("./test/snap_132")
-pos_gas =  f.read_new( "POS ", 0) #the 0 select only gas particles
-[...]
-mass_gas =  f.read_new("MASS", 0)
+f = g3read.GadgetFile("./test/groups_132.0", is_snap=False)
+halo_pos =  f.read_new( "GPOS", 0) #the 0 select only gas particles
 ```
 
 Use the block `PTYPE` to filter by particle type:
@@ -106,7 +75,6 @@ masses = f.read_new("MASS",-1)
 potential = pp.gravitational_potential(masses, positions, center).potential
 
 f.write_block("POT ", -1, potential, filename=my_filename_output)
-
 ```
 ## Reading from a large run (with super indexes)
 
@@ -134,13 +102,15 @@ y = f["POS "][:,1]
 mass = f["MASS"]
 ```
 
-## High Performance 
+## Reading FOF/Subfind
 
-The library `g3read` will use [numba](http://numba.pydata.org) if available.
+check `dump_catalog.py` for a sample that converts subfind haloes to ASCII table.
 
-## Working with units of measurements
+# g3read_units.py: Handling Gadgets Units of Measurement
 
-The library `g3units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`)
+The library `g3units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`).
+
+The library `g3read_units` provides the same function `read_new` and `read_particles_in_a_box` as `g3read`.
 
 In this example we read code-units data and return it in physical units automatically:
 
@@ -158,7 +128,7 @@ total_mass = np.sum(data["MASS"])
 print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
 ``` 
 
-## Maps of large simulations
+# Maps of large simulations
 
 If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `make_maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
@@ -191,7 +161,7 @@ RESULT_UNITS = Msun #/cm^2 #Msun
 ```
 
 
-# Submit a batch of jobs to the c2pap web portal (http://c2papcosmosim.uc.lrz.de/)
+# Batch of jobs to the c2pap web portal http://c2papcosmosim.uc.lrz.de/
 
 Given a list of clusters previously extracted from the c2pap web portal (the output file name is `dataset.csv`), the script `c2pap_batch.py` automatize the process of sending the same jobs parameter to all those haloes.
 
@@ -248,10 +218,3 @@ python gadget_to_hdf5.py infile outfile
 ```
 
 In case you need to map names diffrently from the default version, have a look at the source code of `gadget_to_hdf5.py` and edit your own mapping.
-
-
-# Read Gadget files with units
-
-The library `g3units.py` reads 
-
-# Create SMAC-like maps from large samples
