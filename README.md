@@ -3,18 +3,6 @@ These tools give you the possibility to read and do post processing of large Gad
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
-Table of Contents
-=================
-
-   * [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
-      * [Read a single Gadget file](#read-a-single-gadget-file)
-      * [Writing  back to a (new) file](#writing--back-to-a-new-file)
-      * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
-      * [Reading FOF/Subfind](#reading-fofsubfind)
-   * [g3read_units.py: Handling Gadgets Units of Measurement](#g3read_unitspy-handling-gadgets-units-of-measurement)
-   * [Maps of large simulations](#maps-of-large-simulations)
-   * [Batch of jobs to the c2pap web portal <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>](#batch-of-jobs-to-the-c2pap-web-portal-httpc2papcosmosimuclrzde)
-   * [Convert Gadget2/3 files to HDF5](#convert-gadget23-files-to-hdf5)
 
 
 # g3read.py: read Gadget and key files
@@ -141,17 +129,17 @@ total_mass = np.sum(data["MASS"])
 print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
 ``` 
 
-# Maps of large simulations
+# g3maps.py: Maps of large simulations
 
-If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `make_maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
+If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `g3maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
 `make_maps.py` do also smooth gas properties as SMAC. Here below a comparison between the two: 
 
 ![comparison between make_maps.py on the left and SMAC on the right](https://i.imgur.com/xmCauqV.png)
 
-I am still not sure why `make_maps.py` do produce a more noisy output. It may be that SMAC uses a different SPH kernel (I use top hat by now).
+I am still not sure why `g3maps.py` do produce a more noisy output. It may be that SMAC uses a different SPH kernel (I use top hat by now).
 
-`make_maps` input parameters do contain units, so there is no more confusion on what kind of data you are passing. Here below the input parameter used to make the image:
+`g3maps.py` input parameters do contain units, so there is no more confusion on what kind of data you are passing. Here below the input parameter used to make the image:
 
 ```bash
 
@@ -174,7 +162,7 @@ RESULT_UNITS = Msun #/cm^2 #Msun
 ```
 
 
-# Batch of jobs to the c2pap web portal http://c2papcosmosim.uc.lrz.de/
+# c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/
 
 Given a list of clusters previously extracted from the c2pap web portal (the output file name is `dataset.csv`), the script `c2pap_batch.py` automatize the process of sending the same jobs parameter to all those haloes.
 
