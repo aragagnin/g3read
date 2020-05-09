@@ -14,7 +14,7 @@ Table of Contents
       * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
       * [Reading FOF/Subfind](#reading-fofsubfind)
    * [g3read_units.py: Handling Gadgets Units of Measurement](#g3read_unitspy-handling-gadgets-units-of-measurement)
-   * [Maps of large simulations](#maps-of-large-simulations)
+   * [g3maps.py: Maps of Large Simulations](#maps-of-large-simulations)
    * [Batch of jobs to the c2pap web portal <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>](#batch-of-jobs-to-the-c2pap-web-portal-httpc2papcosmosimuclrzde)
    * [Convert Gadget2/3 files to HDF5](#convert-gadget23-files-to-hdf5)
 
@@ -144,7 +144,7 @@ total_mass = np.sum(data["MASS"])
 print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
 ``` 
 
-# g3maps.py: Maps of large simulations
+# g3maps.py: Maps of Large Simulations
 
 If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `g3maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
