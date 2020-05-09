@@ -3,6 +3,8 @@ These tools give you the possibility to read and do post processing of large Gad
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
+**Author**: Antonio Ragagnin 2016-2020 <antonio.ragagnin@inaf.it>
+
 Table of Contents
 =================
 
