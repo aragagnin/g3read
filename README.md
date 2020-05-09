@@ -3,6 +3,19 @@ These tools give you the possibility to read and do post processing of large Gad
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
+Table of Contents
+=================
+
+   * [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
+      * [Read a single Gadget file](#read-a-single-gadget-file)
+      * [Writing  back to a (new) file](#writing--back-to-a-new-file)
+      * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
+      * [Reading FOF/Subfind](#reading-fofsubfind)
+   * [g3read_units.py: Handling Gadgets Units of Measurement](#g3read_unitspy-handling-gadgets-units-of-measurement)
+   * [Maps of large simulations](#maps-of-large-simulations)
+   * [Batch of jobs to the c2pap web portal <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>](#batch-of-jobs-to-the-c2pap-web-portal-httpc2papcosmosimuclrzde)
+   * [Convert Gadget2/3 files to HDF5](#convert-gadget23-files-to-hdf5)
+
 
 
 # g3read.py: read Gadget and key files
