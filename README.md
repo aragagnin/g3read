@@ -4,6 +4,23 @@ These tools give you the possibility to read and do post processing of large Gad
 
 You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
+
+Table of Contents
+=================
+
+   * [g3read](#g3read)
+      * [Read a single Gadget file](#read-a-single-gadget-file)
+      * [Writing  back to a (new) file](#writing--back-to-a-new-file)
+      * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
+      * [High Performance](#high-performance)
+      * [Working with units of measurements](#working-with-units-of-measurements)
+      * [Maps of large simulations](#maps-of-large-simulations)
+   * [Submit a batch of jobs to the c2pap web portal (<a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>)](#submit-a-batch-of-jobs-to-the-c2pap-web-portal-httpc2papcosmosimuclrzde)
+   * [Convert Gadget2/3 files to HDF5](#convert-gadget23-files-to-hdf5)
+   * [Read Gadget files with units](#read-gadget-files-with-units)
+   * [Create SMAC-like maps from large samples](#create-smac-like-maps-from-large-samples)
+
+
 ## Read a single Gadget file
 
 To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody).
