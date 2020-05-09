@@ -5,17 +5,15 @@ You do not need to download all those files: this is a collection of libraries, 
 
 **Author**: Antonio Ragagnin <antonio.ragagnin@inaf.it>
 
-Table of Contents
-=================
-
+   * [Table of Contents](#table-of-contents)
    * [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
       * [Read a single Gadget file](#read-a-single-gadget-file)
       * [Writing  back to a (new) file](#writing--back-to-a-new-file)
       * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
       * [Reading FOF/Subfind](#reading-fofsubfind)
    * [g3read_units.py: Handling Gadgets Units of Measurement](#g3read_unitspy-handling-gadgets-units-of-measurement)
-   * [g3maps.py: Maps of Large Simulations](#maps-of-large-simulations)
-   * [Batch of jobs to the c2pap web portal <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>](#batch-of-jobs-to-the-c2pap-web-portal-httpc2papcosmosimuclrzde)
+   * [g3maps.py: Maps of Large Simulations](#g3mapspy-maps-of-large-simulations)
+   * [c2pap_batch.py: batch jobs for <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">http://c2papcosmosim.uc.lrz.de/</a>](#c2pap_batchpy-batch-jobs-for-httpc2papcosmosimuclrzde)
    * [Convert Gadget2/3 files to HDF5](#convert-gadget23-files-to-hdf5)
 
 
