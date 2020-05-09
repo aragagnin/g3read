@@ -143,9 +143,36 @@ print(' Total Mass in physical Msun:', total_mass.to('Msun'))
 
 ## Maps of large simulations
 
-If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory.
+If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `make_maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
-The tool
+`make_maps.py` do also smooth gas properties as SMAC. Here below a comparison between the two: 
+
+![comparison between make_maps.py on the left and SMAC on the right](https://i.imgur.com/xmCauqV.png)
+
+I am still not sure why `make_maps.py` do produce a more noisy output. It may be that SMAC uses a different SPH kernel (I use top hat by now).
+
+`make_maps` input parameters do contain units, so there is no more confusion on what kind of data you are passing. Here below the input parameter used to make the image:
+
+```bash
+
+This is the input file used
+
+```bash
+IMG_XY_SIZE = 2209.112 glength
+IMG_Z_SIZE = 400.0*1.1344 kpc#glength
+CENTER_X =   456582.8
+CENTER_Y =   220605.1
+CENTER_Z =   279066.1
+SNAP_PATH = /home/moon/ragagnin/mnt/pr62go/Magneticum/Box2b/hr_bao//snapdir_031/snap_031
+PREFIX_OUT = spwze7x7kjx78ar5/povero_
+IMG_SIZE = 128
+PTYPES = 0,1,2,3,4 #,5
+JOB = 2DMAP
+MAP_DIVIDE_BY_SURFACE = True
+PROPERTY = MASS
+RESULT_UNITS = Msun #/cm^2 #Msun
+```
+
 
 # Submit a batch of jobs to the c2pap web portal (http://c2papcosmosim.uc.lrz.de/)
 
