@@ -1,5 +1,7 @@
 
-These tools give you the possibility to read and do post processing of large Gadget2 and Gadget3 files (including key files),  to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5. You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task. **Author**: Antonio Ragagnin <antonio.ragagnin@inaf.it>
+These tools give you the possibility to read and do post processing of large Gadget2 and Gadget3 files (including key files),  to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5. You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
+
+**Author**: Antonio Ragagnin <antonio.ragagnin@inaf.it>
 
 **Table of Contents:**
 
