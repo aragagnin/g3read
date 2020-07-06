@@ -1,7 +1,9 @@
 
-These tools give you the possibility to read and do post processing of large Gadget2 and Gadget3 files (including key files),  to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5. You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
+This collection of tools read and post processing  large `Gadget2` and `Gadget3` files (including key files).
+The core routines (`g3read.py`) are a composition compbining some `pynbody` and a porting of some legacy _Klaus' IDL_ routines.
+to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5. You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
 
-**Author**: Antonio Ragagnin <antonio.ragagnin@inaf.it>
+**For questions**: Antonio Ragagnin <antonio.ragagnin@inaf.it>
 
 **Table of Contents:**
 
@@ -100,7 +102,7 @@ In this example I first read the position and radius of a FoF object (from the f
 import g3read
 snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
 groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
-fof =  g.GadgetFile(groupbase+'.0', is_snap=False) #if you read a FoF/Subfind file, add is_snap = False 
+fof =  g3read.GadgetFile(groupbase+'.0', is_snap=False) #if you read a FoF/Subfind file, add is_snap = False 
 
 halo_positions = fof.read("GPOS",0) #block zero has FoF data, block 1 has SubFind data
 halo_radii = fof.read("RVIR",0)
@@ -117,6 +119,20 @@ mass = f["MASS"]
 
 ## Reading FOF/Subfind
 
+To read from the catalog you need to use `read_new` with the flag `is_snap=False`:
+
+```python
+import g3read
+snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
+groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
+fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0,is_snap=False);
+print('positions: ', fof['GPOS'])
+print('r200cs: ', fof['RCRI'])
+print('m200cs ', fof['MCRI'])
+
+
+
+```
 check `dump_catalog.py` for a sample that converts subfind haloes to ASCII table.
 
 # g3read_units.py: Handling Gadgets Units of Measurement
