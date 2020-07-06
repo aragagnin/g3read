@@ -27,6 +27,11 @@ import os
 import math
 import sys
 
+
+#
+# superindexing can use numba to speed up. 
+# if numba isn't installed we create a dummy @jit wrapper
+#
 try:
     from numba import jit
 except ImportError:
@@ -40,10 +45,14 @@ except ImportError:
 
         
 debug=0 #set g3read.debug = True for additional info
+
 N_TYPE = 6 #number of block types. Too many things will break if you edit this value
 
 PY3 = sys.version_info[0] == 3 #Python3 flag tester
 
+#
+# manage python3 vs. python2 string differences
+#
 if PY3:
     string_types = str,
     _periodic=["POS "]
@@ -52,6 +61,19 @@ else:
     _periodic=[b"POS "]
 
 
+def _to_raw(s):
+    if isinstance(s, str) and sys.version_info[0] > 2:
+        return s.encode('utf-8')
+    else:
+        return s
+
+def _to_str(s):
+    if sys.version_info[0] > 2:
+        return s.decode('utf-8')
+    else:
+        return s
+
+    
 def iterable(arg):
     """
     this function check if a object is iterable.
@@ -72,18 +94,6 @@ def iterate(arg):
     return [arg]
 
 
-def _to_raw(s):
-    if isinstance(s, str) and sys.version_info[0] > 2:
-        return s.encode('utf-8')
-    else:
-        return s
-
-def _to_str(s):
-    if sys.version_info[0] > 2:
-        return s.decode('utf-8')
-    else:
-        return s
-
 
 _b = _to_raw
 _s = _to_str
@@ -95,7 +105,8 @@ def printf(s,e=False):
 
 def periodic_axis(x,   periodic=None, center_c=None):
     """
-    Apply boundary conditions to input array
+    Apply periodic boundary conditions to input array:
+    particles that are 'too far away' from center_c will be periodicized.
 
     Args:
     x (np.array): the array to be boundarised
@@ -1425,6 +1436,15 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
             yield from part_keylist
 
 def yield_all_files(snap_file_name):
+    """
+    this function generate a list of files from `snap_file_name`.
+    
+    E.g. `snapdir_134/snap_134` may return [`snapdir_134/snap_134`] 
+         or [`snapdir_134/snap_134.0`,`snapdir_134/snap_134.1`, ecc...]
+         depending if the snapshot is multifile or not.
+    """
+    
+    
     snap_path_type = get_snap_path_type(snap_file_name)
     if os.path.isfile(snap_file_name):
         yield snap_file_name
