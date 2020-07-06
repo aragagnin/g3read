@@ -5,7 +5,8 @@ You do not need to download all those files: this is a collection of libraries, 
 
 **Author**: Antonio Ragagnin <antonio.ragagnin@inaf.it>
 
-   * Table of Contents
+Table of Contents
+
    * [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
       * [Read a single Gadget file](#read-a-single-gadget-file)
       * [Writing  back to a (new) file](#writing--back-to-a-new-file)
