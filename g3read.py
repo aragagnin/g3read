@@ -1433,7 +1433,8 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
                 yield [file_name, keylist]
         else:
             if debug>1: print(' # g3.yield_particles_file_in_box yields all from part_keylist')
-            yield from part_keylist
+            for pk in part_keylist:
+                yield pk
 
 def yield_all_files(snap_file_name):
     """
