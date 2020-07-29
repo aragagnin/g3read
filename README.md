@@ -7,14 +7,14 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
 
 **Table of Contents:**
 
-- [g3read.py: read Gadget and key files](#g3readpy--read-gadget-and-key-files)
+- [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
   * [Read a single Gadget file](#read-a-single-gadget-file)
   * [Reading FOF/Subfind](#reading-fof-subfind)
-  * [Reading from a large run (with super indexes)](#reading-from-a-large-run--with-super-indexes-)
-  * [Writing  back to a (new) file](#writing--back-to-a--new--file)
-- [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy--handling-gadgets-units-of-measurement)
-- [g3maps.py: Maps of Large Simulations](#g3mapspy--maps-of-large-simulations)
-- [c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/](#c2pap-batchpy--batch-jobs-for-http---c2papcosmosimuclrzde-)
+  * [Reading from a large run (with super indexes)](#reading-from-a-large-run--with-super-indexes)
+  * [Writing  back to a (new) file](#writing-back-to-a-new-file)
+- [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
+- [g3maps.py: Maps of Large Simulations](#g3mapspy-maps-of-large-simulations)
+- [c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/](#c2pap-batchpy--batch-jobs-for-http-c2papcosmosimuclrzde-)
 - [Convert Gadget2/3 files to HDF5](#convert-gadget2-3-files-to-hdf5)
 
 
