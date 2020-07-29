@@ -1523,7 +1523,7 @@ def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=T
     return global_res
 
 
-def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False):
+def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False, factor=None):
     """
     Python porting of the famous IDL Klaus read_new
     """
