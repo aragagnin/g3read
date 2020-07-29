@@ -80,26 +80,6 @@ There is **Object Oriented version** in case you need multiple call `read_new` m
 f = g3read.GadgetFile("./test/snap_132")
 mass =  f.read_new("MASS", 4)
 pos  = f.read_new("POS ", 4) 
-
-## Writing  back to a (new) file
-
-The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
-
-In this example I recompute the gravitational potentail between particles and store it back in a pre-existing `"POT "` block.
-The pacakge `pp.py` contains a routine to compute the gravitational potential between particles of the snapshot.
-
-
-```python
-import g3read, pp 
-my_filename = "./test/snap_132"
-my_filename_output "./test/new_snap_132"
-
-f = g3read.GadgetFile(my_filename)
-positions = f.read_new("POS ",-1) #-1 means all particles
-masses = f.read_new("MASS",-1)
-potential = pp.gravitational_potential(masses, positions, center).potential
-
-f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
 
 ## Reading FOF/Subfind
@@ -124,8 +104,6 @@ check `test_g3read.py` for a sample that converts subfind haloes to ASCII table.
 ## Reading from a large run (with super indexes)
 
 The signature of `g3read.read_particles_in_box` is almost the same of `read_new`. As opposed to `read_new`, `g3read.read_particles_in_box` additionally needs a minimum radius.
-
-
 
 ```python
 read_particles_in_box(snap_basepath, center, distance, blocks, ptypes, join_ptypes=True, is_snap=True)
@@ -171,6 +149,26 @@ group_gas_distance_from_center = g3.to_spherical(group_gas_data['POS '], center)
 group_gas_mask = group_gas_distance_from_center < r200c
 group_gas_masswtemp =  group_gas_data['TEMP'][group_gas_mask] * group_gas_data['MASS'][group_gas_mask]
 group_gas_avgtemp =  np.mean(group_gas_masswtemp)/np.sum( group_gas_data['MASS'][group_gas_mask])
+```
+## Writing  back to a (new) file
+
+The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
+
+In this example I recompute the gravitational potentail between particles and store it back in a pre-existing `"POT "` block.
+The pacakge `pp.py` contains a routine to compute the gravitational potential between particles of the snapshot.
+
+
+```python
+import g3read, pp 
+my_filename = "./test/snap_132"
+my_filename_output "./test/new_snap_132"
+
+f = g3read.GadgetFile(my_filename)
+positions = f.read_new("POS ",-1) #-1 means all particles
+masses = f.read_new("MASS",-1)
+potential = pp.gravitational_potential(masses, positions, center).potential
+
+f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
 
 # g3read_units.py: Handling Gadgets Units of Measurement
