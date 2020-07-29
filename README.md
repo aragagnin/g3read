@@ -28,48 +28,60 @@ To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This libr
 The easiset way to read from a Gadget file is to use the function `read_new` (a clone of Klaus Dolag IDL routine). 
 
 ```python
-read_new(filename, blocks, ptypes, center=None, is_snap=False)
+read_new(filename, blocks, ptypes, center=None, is_snap=True, join_ptypes=False)
 ```
 
 - `filename`: path of the gadget file
 - `blocks`: block(s) to read. Can be a string or a list of one or more strings (e.g. `"MASS"`, `["MASS"]`, or `["MASS", "POS "]`)
-- `ptypes`: can be an integer  or a list of integers representing the particle type (e.g. `1`, `[1]`, or `[0,1,2,3,4,5]`). Using `-1` euals to asking for all blocks.
+- `ptypes`: can be an integer  or a list of integers representing the particle type (e.g. `1`, `[1]`, or `[0,1,2,3,4,5]`). Using `-1` equals to asking for all blocks.
 `center`: if set turns on the periodic (PBC) assumpions. 
+- `is_snap`: default is `True`. Set to `False` in order to read SUBFIND data
+- `join_ptypes`: default is `True`. If `False` return a dictionary with data separated by ptype.
 - return type depends on the input data: if `blocks` is a list, then the result is a dictionary of array data for each block (see examples below) 
 
-Example:
+Examples:
 
 ```python
 import g3read
+
+# read one block per time from all ptype:
 mass =  g3read.read_new("./test/snap_132", "MASS", -1) #the -1 means to select all particles
 pos  = g3read.read_new("./test/snap_132", "POS ", -1) 
 x = pos[:,0]
 y = pos[:,1]
-```
 
+# read one block per time from one ptype:
+mass =  g3read.read_new("./test/snap_132", "MASS", 4) #the 4 means to select star particles
+pos  = g3read.read_new("./test/snap_132", "POS ", 4) 
 
-To select both position and mass of gas and dark matter (Note the difference if `"POS "` is within a list):
-
-```python
-data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,1]) #the 0 select only gas particles
+# read multiple blocks from one ptype
+data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], 0) #the 0 select only gas particles
 pos = data["POS "]
 mass  = data["MASS"]
-````
 
-In case you need multiple reads and want to save some I/O time,  , you can instantiate a GadgetFile  separately (note `is_snap=False` when reading a catalog):
+# read multiple blocks from multiple ptypes, all stacked in a single array
+data =  g3read.read_new("./test/snap_132", ["POS ", "MASS","TEMP"], [0,4]) #the 0,4 select  gas and star particles
+stars_and_gas_pos = data["POS "]
+stars_and_gas_mass = data["POS "]
+#And use the artificial block `PTYPE` to filter by particle type:
+gas_mask = data["PTYPE"]==0
+gas_temp = data["TEMP"][gas_mask] 
 
-```python
-f = g3read.GadgetFile("./test/groups_132.0", is_snap=False)
-halo_pos =  f.read_new( "GPOS", 0) #the 0 select only gas particles
+# read multiple blocks from multiple ptypes in a single array (note join_ptyes=False)
+data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,4], join_ptypes=False) #the 0,4 select  gas and star particles
+stars_pos = data[4]["POS "]
+stars_mass  = data[4]["MASS"]
+gas_pos = data[0]["POS "]
+gas_mass  = data[0]["MASS"]
+
 ```
 
-Use the block `PTYPE` to filter by particle type:
+There is **Object Oriented version** in case you need multiple call `read_new` multiple times from a file, you can instantiate a GadgetFile  separately (note `is_snap=False` when reading a catalog):
 
 ```python
-f = g3read.GadgetFile(filename)
-data = f.read_new(blocks=["POS ","VEL ","TEMP","MASS"], ptypes=[0,1,2,3,4,5])
-gas_temp = data["TEMP"][data["PTYPE"]==0] #zero is for gas,1 dm, 4 stars, 5 BH
-```
+f = g3read.GadgetFile("./test/snap_132")
+mass =  f.read_new("MASS", 4)
+pos  = f.read_new("POS ", 4) 
 
 ## Writing  back to a (new) file
 
@@ -91,31 +103,6 @@ potential = pp.gravitational_potential(masses, positions, center).potential
 
 f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
-## Reading from a large run (with super indexes)
-
-The signature of `g3read.read_particles_in_box` is almost the same of `read_new`.
-As opposed to `read_new`, `g3read.read_particles_in_box` additionally needs a minimum radius.
-
-In this example I first read the position and radius of a FoF object (from the fof files) and then I extract its properties with `read_particles_in_box`.
-
-```python
-import g3read
-snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
-groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
-fof =  g3read.GadgetFile(groupbase+'.0', is_snap=False) #if you read a FoF/Subfind file, add is_snap = False 
-
-halo_positions = fof.read("GPOS",0) #block zero has FoF data, block 1 has SubFind data
-halo_radii = fof.read("RVIR",0)
-
-#extract position of first halo
-first_halo_position = halo_positions[0]
-first_halo_radius = halo_radii[0]
-
-f = g3read.read_particles_in_box(snapbase, first_halo_position, first_halo_radius, ["POS ","MASS"], [0,1,2,3,4,5])
-x = f["POS "][:,0]
-y = f["POS "][:,1]
-mass = f["MASS"]
-```
 
 ## Reading FOF/Subfind
 
@@ -125,15 +112,68 @@ To read from the catalog you need to use `read_new` with the flag `is_snap=False
 import g3read
 snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
 groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
-fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0,is_snap=False);
+
+fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0, is_snap=False);
+
 print('positions: ', fof['GPOS'])
 print('r200cs: ', fof['RCRI'])
 print('m200cs ', fof['MCRI'])
 
-
-
 ```
-check `dump_catalog.py` for a sample that converts subfind haloes to ASCII table.
+check `test_g3read.py` for a sample that converts subfind haloes to ASCII table.
+
+
+## Reading from a large run (with super indexes)
+
+The signature of `g3read.read_particles_in_box` is almost the same of `read_new`. As opposed to `read_new`, `g3read.read_particles_in_box` additionally needs a minimum radius.
+
+
+
+```python
+read_particles_in_box(snap_basepath, center, distance, blocks, ptypes, join_ptypes=True, is_snap=True)
+```
+
+- `snap_basepath`: is the base path of the snapshot, (e.g. `/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136` )
+- `center`: position of the sphere of radius `distance` that will contains our particles
+- `radius`: searching radius  of particles. Note the routine will return a superset of particiles within `radius`.
+- `blocks`: as `read_new`
+- `ptypes`: as `read_new`
+- `is_snap`:  as `read_new`
+- `join_ptypes`:  as `read_new`
+- return  as `read_new`
+
+In this example I first read the position and radius of a FoF object (from the fof files) and then I extract its properties with `read_particles_in_box`.
+
+```python
+import g3read
+snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
+groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
+
+#read FOF data
+fof =  g3read.GadgetFile(groupbase+'.0', is_snap=False) #if you read a FoF/Subfind file, add is_snap = False 
+halo_positions = fof.read("GPOS",0) #block zero has FoF data, block 1 has SubFind data
+halo_radii = fof.read("RVIR",0)
+
+#extract position of first halo
+first_halo_position = halo_positions[0]
+first_halo_radius = halo_radii[0]
+
+#use read_particles_in_box
+f = g3read.read_particles_in_box(snapbase, first_halo_position, first_halo_radius, ["POS ","MASS"], -1)
+x = f["POS "][:,0]
+y = f["POS "][:,1]
+mass = f["MASS"]
+
+group_gas_data = g3.read_particles_in_box(snapbase, first_halo_position, first_halo_radius,   ['MASS', 'TEMP', 'POS '], 0)
+
+#note: in the spirit of Klaus read_particles_in_box, the above routine returns a superset of particles within `r200c`.
+#we now filter data outside r200c, we use  g3.to_spherical that returns an array of [rho, theta, phi] around `center`.
+
+group_gas_distance_from_center = g3.to_spherical(group_gas_data['POS '], center).T[0]
+group_gas_mask = group_gas_distance_from_center < r200c
+group_gas_masswtemp =  group_gas_data['TEMP'][group_gas_mask] * group_gas_data['MASS'][group_gas_mask]
+group_gas_avgtemp =  np.mean(group_gas_masswtemp)/np.sum( group_gas_data['MASS'][group_gas_mask])
+```
 
 # g3read_units.py: Handling Gadgets Units of Measurement
 
