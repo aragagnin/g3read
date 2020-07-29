@@ -134,7 +134,9 @@ def join_res(res, blocks,  join_ptypes, only_joined_ptypes, f=None, factor=None)
     To access all positions: join_res( read_new(["POS "],[0,1])) [-1]["POS "]
 
     """
-    
+
+    if not join_ptypes:
+        only_joined_ptypes=False
     ptypes = [i for i in res if i!=-1]
     non_empty_blocks = []
     #if requested, add block -1
@@ -172,8 +174,8 @@ def join_res(res, blocks,  join_ptypes, only_joined_ptypes, f=None, factor=None)
             res_minus_one['PTYPE']=np.concatenate(tuple(
                 [np.zeros(len(res[i][ list(res[i].keys())[0]   ]),dtype=np.int32)+i  for i in res if i!=-1 and len(res[i].keys())>0  ]
             ))
-    #if requested, we return only -1 block
-    res[-1] = res_minus_one
+        #if requested, we return only -1 block
+        res[-1] = res_minus_one
     if factor is not None:
         for ptype in res:
             res_ptype = res[ptype]
@@ -1499,6 +1501,10 @@ def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=T
     """
     Python porting of the famous IDL Klaus read_particles_blocks_in_box
     """
+    if ptypes==-1:
+        only_joined_ptypes=True
+        ptypes=[0,1,2,3,4,5]
+
     global_res = {}
     for res in yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes, periodic=True, debug=debug):
         #
