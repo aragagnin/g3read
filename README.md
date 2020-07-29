@@ -66,7 +66,7 @@ stars_and_gas_mass = data["POS "]
 gas_mask = data["PTYPE"]==0
 gas_temp = data["TEMP"][gas_mask] 
 
-# read multiple blocks from multiple ptypes in a single array (note join_ptyes=False)
+# read multiple blocks from multiple ptypes, each in a separate array (note join_ptyes=False)
 data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,4], join_ptypes=False) #the 0,4 select  gas and star particles
 stars_pos = data[4]["POS "]
 stars_mass  = data[4]["MASS"]
