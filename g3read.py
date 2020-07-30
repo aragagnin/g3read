@@ -1488,7 +1488,7 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
                 if ptype not in res:
                     res[ptype]={}
                 for block in iterate(blocks):
-                    x = f.read_new(block, ptype, do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)
+                    x = f.read_new(block, ptype, do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)[ptype][block]
                     res[ptype][block]=x
             if debug>2: print('#res ', res)
             yield res
