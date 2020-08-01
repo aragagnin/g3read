@@ -1385,7 +1385,7 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
     snap_path_type = get_snap_path_type(snap_file_name)
     if(debug>1): print('# ',snap_path_type)
     
-    if not snap_path_type["has_super_index"]:
+    if True or not snap_path_type["has_super_index"]:
         if not snap_path_type["multiple_files"]:
             yield [snap_file_name, None]
             return
@@ -1397,6 +1397,8 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
                 if os.path.isfile(file_name):
                     yield [file_name, None]
                 else:
+                    return
+                if index>2:
                     return
     else:
         if(debug>1): print('# has super index file')
@@ -1464,7 +1466,6 @@ def yield_all_files(snap_file_name):
 def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=False, debug=0, factor=None, part_keylist =None):
     """
     given a list of files, yield the numpy data array.
-
     this function is very useful if you have low memory and must process a block/file per time.
     """
     ce = np.array(center)
@@ -1484,13 +1485,24 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
                 _periodic = None
         
             res = {}
+            if 'POS ' not in iterate(blocks):
+                raise ValueError('Snapshot is stored on multiple files and has no superinexes: '
+                                 'then you need add "POS " block to list of blocks in order to make spherical cuts.')
             for ptype in iterate(ptypes):
                 if ptype not in res:
                     res[ptype]={}
+                x_pos = f.read_new(['POS '], [ptype], do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)[ptype]['POS ']
+                #perform cut of read_particles_in_box without superindexes
+                x_distance = to_spherical(x_pos, center).T[0]
+                x_mask = x_distance<d
                 for block in iterate(blocks):
-                    x = f.read_new(iterate(block), iterate(ptype), do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)[ptype][block]
-                    res[ptype][block]=x
-            if debug>2: print('#res ', res)
+                    if block=='POS ':
+                        _x = x_pos
+                    else:
+                        _x = f.read_new(iterate(block), iterate(ptype), do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)[ptype][block]
+                    res[ptype][block]=_x[x_mask]
+            if debug>2:
+                print('#res ', res)
             yield res
         else:
             res =  read_particles_given_key_for_single_file(file_name, blocks, keylist, ptypes, periodic=periodic,center=ce, debug=debug, factor=factor)
