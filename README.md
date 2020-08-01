@@ -221,8 +221,6 @@ I am still not sure why `g3maps.py` do produce a more noisy output. It may be th
 
 `g3maps.py` input parameters do contain units, so there is no more confusion on what kind of data you are passing. Here below the input parameter used to make the image:
 
-```bash
-
 This is the input file used
 
 ```bash
