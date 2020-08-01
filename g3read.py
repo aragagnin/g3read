@@ -1385,7 +1385,7 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
     snap_path_type = get_snap_path_type(snap_file_name)
     if(debug>1): print('# ',snap_path_type)
     
-    if True or not snap_path_type["has_super_index"]:
+    if not snap_path_type["has_super_index"]:
         if not snap_path_type["multiple_files"]:
             yield [snap_file_name, None]
             return
@@ -1398,8 +1398,7 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
                     yield [file_name, None]
                 else:
                     return
-                if index>2:
-                    return
+
     else:
         if(debug>1): print('# has super index file')
         fr=ce-d
