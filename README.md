@@ -9,6 +9,7 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
 
 - [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
   * [Read a single Gadget file](#read-a-single-gadget-file)
+  * [Access the header](#access-the-header)
   * [Reading FOF/Subfind](#reading-fof-subfind)
   * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
   * [Writing  back to a (new) file](#writing-back-to-a-new-file)
