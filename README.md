@@ -82,8 +82,22 @@ f = g3read.GadgetFile("./test/snap_132")
 mass =  f.read_new("MASS", 4)
 pos  = f.read_new("POS ", 4) 
 ```
+## Access the header
 
-## Reading FOF/Subfind
+You can access the header field of the object `GadgetFile`. As in the following example
+
+```python
+f = g3read.GadgetFile("./test/snap_132")
+numpart_thisfile = f.header.npart
+numpart_allfiles = f.header.npartTotal
+redshift =  f.header.redshift
+scale_factor =  f.header.time
+box_size =  f.header.BoxSize
+h0 = f.header.HubbleParam
+all_other_properties_name = f.header.__dict__.keys()
+```
+
+## Reading FOF/Subfind files
 
 To read from the catalog you need to use `read_new` with the flag `is_snap=False`:
 
