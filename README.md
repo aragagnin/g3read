@@ -213,15 +213,8 @@ print(' Total Mass in physical Msun:', total_mass.to('Msun'))
 
 If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `g3maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
-`g3maps.py` do also smooth gas properties as SMAC. Here below a comparison between the two: 
 
-![comparison between make_maps.py on the left and SMAC on the right](https://i.imgur.com/xmCauqV.png)
-
-I am still not sure why `g3maps.py` do produce a more noisy output. It may be that SMAC uses a different SPH kernel (I use top hat by now).
-
-`g3maps.py` input parameters do contain units, so there is no more confusion on what kind of data you are passing. Here below the input parameter used to make the image:
-
-This is the input file used (see file `g3maps.inp` )
+`g3maps.py` **input parameters do specify units!** so there is no more painful confusion on Gadget units conversions. Here below the input parameter used to make the image (see file `g3maps.inp` )
 
 ```bash
 IMG_XY_SIZE = 2209.112 glength
@@ -238,6 +231,13 @@ MAP_DIVIDE_BY_SURFACE = True
 PROPERTY = MASS
 RESULT_UNITS = Msun #/cm^2 #Msu
 ```
+
+As you can see `IMG_XY_SIZE` is specified in code units (`glength`) while `IMG_Z_SIZE` is specified in physical kiloparser .. you decide which units you want to specify! And here below is the output of the parameter file here above:
+
+![comparison between make_maps.py on the left and SMAC on the right](https://i.imgur.com/xmCauqV.png)
+
+I am still not sure why `g3maps.py` do produce a more noisy output. It may be that SMAC uses a different SPH kernel (I use top hat by now).
+
 
 
 # c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/
