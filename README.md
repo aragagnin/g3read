@@ -214,7 +214,7 @@ print(' Total Mass in physical Msun:', total_mass.to('Msun'))
 If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `g3maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
 
-`g3maps.py` **input parameters do specify units!** so there is no more painful confusion on Gadget units conversions. Here below the input parameter used to make the image (see file `g3maps.inp` )
+`g3maps.py` uses [pint](https://pint.readthedocs.io/en/stable/) package, so **input parameters do specify units!** so there is no more painful confusion on Gadget units conversions. Here below the input parameter used to make the image (see file `g3maps.inp` )
 
 ```bash
 IMG_XY_SIZE = 2209.112 glength
