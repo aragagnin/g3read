@@ -1,0 +1,13 @@
+IMG_XY_SIZE = 2209.112 glength
+IMG_Z_SIZE = 400.0*1.1344 kpc
+CENTER_X =   456582.8 glength
+CENTER_Y =   220605.1 glength 
+CENTER_Z =   279066.1 glength
+SNAP_PATH = /HydroSims/Magneticum/Box2b/hr_bao//snapdir_031/snap_031
+PREFIX_OUT = spwze7x7kjx78ar5/povero_
+IMG_SIZE = 128
+PTYPES = 0,1,2,3,4 #,5
+JOB = 2DMAP
+MAP_DIVIDE_BY_SURFACE = True
+PROPERTY = MASS
+RESULT_UNITS = Msun #/cm^2 #Msu
