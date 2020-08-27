@@ -189,9 +189,9 @@ f.write_block("POT ", -1, potential, filename=my_filename_output)
 
 # g3read_units.py: Handling Gadgets Units of Measurement
 
-The library `g3units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`).
+The library `g3read_units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`).
 
-The library `g3read_units` provides the same function `read_new` and `read_particles_in_a_box` as `g3read`.
+The library `g3read_units` provides the same function `read_new` and `read_particles_in_a_box` as `g3read` and returns data with `pint` units.
 
 In this example we read code-units data and return it in physical units automatically:
 
