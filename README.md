@@ -210,7 +210,7 @@ data = g3u.read_particles_in_box(snap_base, center, distance, ["MASS", "POS "], 
 
 #distance is in kpc, while data['POS '] is in glength
 #here, thanks with 'pint' magic, we filter data based on physical kpc distance
-mask = ((data["POS "][:,0]-center)<distance) & ((data["POS "][:,1]-center)<distance) ((data["POS "][:,2]-center)<distance)   
+mask = ((data["POS "][:,0]-center)<distance) & ((data["POS "][:,1]-center)<distance) & ((data["POS "][:,2]-center)<distance)   
 
 #pint arrays work flowlessy with numpy
 total_mass = np.sum(data["MASS"])
