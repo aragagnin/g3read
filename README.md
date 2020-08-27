@@ -198,14 +198,24 @@ In this example we read code-units data and return it in physical units automati
 ```python
 import g3read_units as g3u
 snap_base = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
+
+#this function reads h0 and z from the snapshot in order to convert between codeunits, comoving and physical units
 units = g3u.get_units(snap_base)
-ureg = units.get_u() #pint ureg
+ureg = units.get_u() #create pint ureg (see https://pint.readthedocs.io/)
+
 center = [500.,500.,500.] * ureg.glength  #we give a center in code units 
 distance = 500. * ureg.kpc # distance we give in real kpc
 
 data = g3u.read_particles_in_box(snap_base, center, distance, ["MASS", "POS "], -1):
+
+#distance is in kpc, while data['POS '] is in glength
+#here, thanks with 'pint' magic, we filter data based on physical kpc distance
 mask = ((data["POS "][:,0]-center)<distance) & ((data["POS "][:,1]-center)<distance) ((data["POS "][:,2]-center)<distance)   
+
+#pint arrays work flowlessy with numpy
 total_mass = np.sum(data["MASS"])
+
+# we print total_mass  in physical Msun
 print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
 ``` 
 
