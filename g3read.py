@@ -833,7 +833,7 @@ class GadgetFile(object):
            dtype=np.float32
            partlen = self.blocks[g_name].partlen
            if g_name=="ID  ":
-               dtype=np.uint64
+               dtype=self.blocks[g_name].data_type
            dim = np.dtype(dtype).itemsize
            cols = int(partlen/dim)
            return cols,dtype
