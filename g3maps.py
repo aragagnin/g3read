@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# g3maps is inspired by Klaus' SMAC (https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) and it produce 
+# 2D syntetic observations from Gadget snapshots. The advantages w.r.t. SMAC are that (1) each input is given  
+# given with respective units, and (2) it can produce maps of objects that do not fit the RAM capacity of the machine.
+# Units are handled with the package `pint` (https://pint.readthedocs.io/en/stable/).
+
 
 import g3read_units as g3u
 import g3read as g3
@@ -7,8 +12,15 @@ import numpy as np
 from numba import jit
 
 
+# the input values are given with a file or a dict and
+# `xyz_keys` stores the key name of the coordinates of center of the map
+xyz_keys = ['CENTER_X', 'CENTER_Y', 'CENTER_Z'] 
 
 def parse_ureg_expressions(kv, to_parse, ureg):
+"""Reads input values with units (e.g. '3000 kpc') and parses it in a  `pint` value).
+   Input values came from the config file and are passed in a dict `kv`.
+   `to_parse` is a dictionary that stores the type of the value of a given key (e.g. the number of pixels IMG_SIZE is `int`),
+   and `ureg` is a `pint` instance """  
     res = {}
     for k in to_parse:
         res[k] = kv[k].evaluate(ureg)
@@ -17,6 +29,11 @@ def parse_ureg_expressions(kv, to_parse, ureg):
 
 @jit(nopython=True)
 def     add_to_grid(final_image_t, masked_x, masked_y, masked_h, masked_w, bin_min, delta_bin, n_bins):
+    """This routine adds a chunk of particles with sky positions `masked_x, masked_y`, 
+    smoothing length  `masked_h,` and value `masked_w` (e.g. paticle mass) to a FIT buffer `finalt_image_t`.
+    Data is inserted in chunks in order to be able to process objects that do not fit into memory.
+    """
+    
     N = len(masked_x)
 
     tot_max_bin_spread = 0
@@ -38,10 +55,8 @@ def     add_to_grid(final_image_t, masked_x, masked_y, masked_h, masked_w, bin_m
     else:
         return np.nan
 
-xyz_keys = ['CENTER_X', 'CENTER_Y', 'CENTER_Z']
-
 def smac_for_poors(kv):
-    
+    """here we read input data `kv`, read chunks of particles and send them to `add_to_grid`"""
     #set the snapshots' scalefactor and hubble factor into units.
     units = g3u.get_units(kv['SNAP_PATH'])
     #produce a set of pint units from the snapshots data
@@ -111,7 +126,7 @@ def smac_for_poors(kv):
     final_image = np.nan_to_num(final_image_t)
 
     print('#')
-
+    # write the FIT file down
     print(final_image.shape)
     import matplotlib.pyplot as plt
     from astropy.io import fits
@@ -148,7 +163,7 @@ EXTEND  =                    T
     hdu.writeto(outfile, clobber=True)
     print('#')
 
-
+# factory for ureg pint objects from a string
 class Uregexpr(object):
     def __init__(self, expression):
         self.expression = expression
@@ -156,6 +171,8 @@ class Uregexpr(object):
         return ureg.parse_expression(self.expression)
     def __str__(self):
         return 'ureg '+self.expression
+
+# type of input paramters, Uregexpr means the input may be  a string like '1000. kpc'
 types={
     "CENTER_X": Uregexpr,
     "CENTER_Y": Uregexpr,
@@ -166,7 +183,11 @@ types={
 
 }    
     
+
+
 def parse_config_file(filename):
+    " convert a INI file to a dict where values have types from `types` "
+
     kv = {'TOPARSE':[]}
     with open(input_file,'r') as f:
         for line0 in f:
@@ -187,9 +208,13 @@ def parse_config_file(filename):
                 print('#',k1,'=',str(v2))
     return kv
 
+#
+# if we execute the script we read an input file specified in the command line
+# and pass it to smac_for_poors.
+#
 if __name__=='__main__':
     print('#')
-    print('# Gadget large maps v0.1a ')
+    print('# g3maps.py: Gadget large maps v0.1a ')
     print('#')
 
     if (len(sys.argv)!=2):
