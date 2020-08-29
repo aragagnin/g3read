@@ -1,3 +1,11 @@
+#
+# this is a sample input file for g3maps.py.
+#
+# data follows INI format, values are quantities that can be
+# expressions with units (e.g. '100*1000 kpc' is a valid value).
+#
+# See https://github.com/aragagnin/g3read for more information
+#
 IMG_XY_SIZE = 2209.112 glength
 IMG_Z_SIZE = 400.0*1.1344 kpc
 CENTER_X =   456582.8 glength
