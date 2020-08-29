@@ -3,7 +3,9 @@
 # 2D syntetic observations from Gadget snapshots. The advantages w.r.t. SMAC are that (1) each input is given  
 # given with respective units, and (2) it can produce maps of objects that do not fit the RAM capacity of the machine.
 # Units are handled with the package `pint` (https://pint.readthedocs.io/en/stable/).
-
+#
+# by Antonio Ragagagnin <antonio.ragagnin@inaf.it>
+#
 
 import g3read_units as g3u
 import g3read as g3
