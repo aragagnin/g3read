@@ -1,6 +1,18 @@
+""" 
+
+This file tests g3read library by parsing halo from a simulation catalog
+and outputs (1) FoF propertis (mass, radius, center), then it reads halo particles with `read_particles_in_a_box`
+and outpus (2) halo weighted temperature.
+
+`snapbase` and `groupbase` are meant to work on dorc1.usm.uni-muenchen.de servers. 
+change it by hand to test it in your environment.
+
+Antonio Ragagnin
+
+"""
+
 import g3read as g3, numpy as np
 
-""" TEST READ MAGNETICUM SIMS """
 
 snapbase = '/HydroSims/Magneticum/Box1a/mr_bao/snapdir_144/snap_144'
 groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
