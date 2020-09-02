@@ -21,12 +21,15 @@ class Units(object):
         "TODO: possibility of passing additional units to the constructor for `conversion_blocks` (es. {'T    ':'K'})."
         self.conversion_blocks = {
             'MASS':'gmass',
+            'VEL ':' gvelocity_a',
             'POS ': 'glength',
-            'RHO ': 'gmass/glength^3'
+            'RHO ': 'gmass/glength^3',
+
         }
         self.ureg = UnitRegistry()
         u = self.ureg
         u.define('Msun = 1.99885e30kg')
+        u.define('yr = 3,154e+7 s')
         u.define('gmass = 1e10 Msun/hubble')
         u.define('cmass = Msun/hubble')
         u.define('clength = kpc/hubble*scalefactor')
@@ -48,20 +51,20 @@ class Units(object):
     def get_u(self):
         return self.ureg
 
-def gen_units(f,units=None, debug=False):
+def gen_units(f,units=None, debug=False, hubble = None, time=None):
     """take a snapshot and returns a Unit class with the hubble and scalefactor context of 
     #a given snapshot"""
     if units is None:
         units = Units();
-        units.set_context(f.header.HubbleParam, f.header.time, debug=True);
+        units.set_context(f.header.HubbleParam if hubble is None else hubble, f.header.time if time is None else time, debug=True);
     return units
 
 
-def get_units(snap_path):
+def get_units(snap_path, hubble = None, time=None):
     "get units from gen_units given a snapshot path"
     one_file_name = g3.get_one_file(snap_path)
     one_file_descriptor = g3.GadgetFile(one_file_name)
-    units = gen_units(one_file_descriptor, debug=True)
+    units = gen_units(one_file_descriptor, hubble = hubble, time=time,debug=True)
     return units
 
 def gen_factor(units,f, blocks):
@@ -73,16 +76,38 @@ def gen_factor(units,f, blocks):
 
     factor = {}
     for block in g3.iterate(blocks):
-        factor[block] = ureg.parse_expression(units.conversion_blocks[block])
+        if block in units.conversion_blocks:
+            factor[block] = ureg.parse_expression(units.conversion_blocks[block])
+        else:
+            factor[block] = 1
     return factor
 
 
+def add_units(data, factor):
+    return data*factor
+
+def add_units_blocks(data, blocks, factor):
+    if g3.iterable(blocks):
+        for block in blocks:
+            data[block] = add_units(data[block], factor[block] if block in factor else 1.)
+    else:
+        data = add_units(data,  factor)    
+    return data
+
+def add_units_blocks_ptypes(data, blocks, ptypes,factor):
+    if g3.iterable(ptypes):
+        for ptype in ptypes:
+            data[ptype] = add_units_blocks(data[ptype], blocks, factor)
+    else:
+        data = add_units_blocks(data, blocks, factor)    
+    return data
 
 def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False, units=None):
     "proxy of g3read `read_new` where we multuply numpy array with data "
     f = g3read.GadgetFile(filename)
     factor = gen_factor(units, f, blocks)
-    res = read_new(filename, blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center, is_snap=is_snap, factor=factor)
+    res = read_new(filename, blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center, is_snap=is_snap)
+    return  add_units_blocks_ptypes(v, blocks, ptypes,factor)
             
 
 def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=True, units=None, debug=False):
@@ -97,13 +122,14 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
     f = g3.GadgetFile(filename)
     factor = gen_factor(units, f, blocks)
     if debug: print('# factor',factor)
-    yield from g3.yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=periodic, factor=factor, debug=debug)# part_keylist = part_keylist)
-     
+    for y in g3.yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=periodic,  debug=debug):# part_keylist = part_keylist)
+        yield  add_units_blocks_ptypes(y, blocks, ptypes,factor)
 
-def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True):
-   "proxy of g3read `read_particles_in_box` where we multuply numpy array with data "
-   for filename in g3.yield_particles_file_in_box(snap_file_name,center,d) :
-        break
-    f = g3read.GadgetFile(filename)
+
+def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, units = None):
+    "proxy of g3read `read_particles_in_box` where we multuply numpy array with data "
+    f = g3.GadgetFile(g3.get_one_file(snap_file_name))
     factor = gen_factor(units, f, blocks)
-    return  g3.yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=periodic, factor=factor)
+    v =  g3.read_particles_in_box(snap_file_name, center.to('glength').magnitude, d.to('glength').magnitude, blocks, ptypes,  periodic=periodic)
+    return  add_units_blocks_ptypes(v, blocks, ptypes,factor)
+

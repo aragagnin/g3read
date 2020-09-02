@@ -19,10 +19,10 @@ from numba import jit
 xyz_keys = ['CENTER_X', 'CENTER_Y', 'CENTER_Z'] 
 
 def parse_ureg_expressions(kv, to_parse, ureg):
-"""Reads input values with units (e.g. '3000 kpc') and parses it in a  `pint` value).
-   Input values came from the config file and are passed in a dict `kv`.
-   `to_parse` is a dictionary that stores the type of the value of a given key (e.g. the number of pixels IMG_SIZE is `int`),
-   and `ureg` is a `pint` instance """  
+    """Reads input values with units (e.g. '3000 kpc') and parses it in a  `pint` value).
+    Input values came from the config file and are passed in a dict `kv`.
+    `to_parse` is a dictionary that stores the type of the value of a given key (e.g. the number of pixels IMG_SIZE is `int`),
+    and `ureg` is a `pint` instance """  
     res = {}
     for k in to_parse:
         res[k] = kv[k].evaluate(ureg)

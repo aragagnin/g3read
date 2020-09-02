@@ -122,7 +122,7 @@ def periodic_axis(x,   periodic=None, center_c=None):
     return dx+center_c
 
 
-def join_res(res, blocks,  join_ptypes, only_joined_ptypes, f=None, factor=None):
+def join_res(res, blocks,  join_ptypes, only_joined_ptypes, f=None):
     """
     join the read_new results of various blocks in a single block of ptype = -1.
 
@@ -176,11 +176,6 @@ def join_res(res, blocks,  join_ptypes, only_joined_ptypes, f=None, factor=None)
             ))
         #if requested, we return only -1 block
         res[-1] = res_minus_one
-    if factor is not None:
-        for ptype in res:
-            res_ptype = res[ptype]
-            for block in res_ptype:
-                res[ptype][block]*=factor[block]
     #print(res, only_joined_ptypes, iterable(ptypes),iterable(blocks))
     if only_joined_ptypes: 
         if iterable(blocks):
@@ -792,7 +787,7 @@ class GadgetFile(object):
 
         fd.close()
     
-    def read_new(self, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=_periodic, center=None, do_join=True, factor=None):
+    def read_new(self, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=_periodic, center=None, do_join=True):
 
         if iterable(blocks): _blocks=blocks
         else: _blocks = [blocks]
@@ -815,7 +810,7 @@ class GadgetFile(object):
                 f_data = self.read(block, ptype, center=center)
                 res[ptype][block] = f_data
         if do_join:
-            return  join_res(res, blocks, join_ptypes, only_joined_ptypes, f=self, factor=factor)
+            return  join_res(res, blocks, join_ptypes, only_joined_ptypes, f=self)
         else:
             return res
 
@@ -1220,7 +1215,7 @@ def find_files_for_keys(myname,keylist, debug=0, limit_to=None):
     return ifiles
 
 
-def read_particles_given_key_for_single_file(mmyname,blocks,keylist, ptypes,periodic=True,center=None, join_ptypes=True, only_joined_ptypes=True, debug=0, factor=None):
+def read_particles_given_key_for_single_file(mmyname,blocks,keylist, ptypes,periodic=True,center=None, join_ptypes=True, only_joined_ptypes=True, debug=0):
     """ 
     this function is a clone of Klaus IDL peano hilbert key function. 
     give me  a filename, list of peano key (keylist) and it returns the  data blocks and ptypes.
@@ -1315,15 +1310,12 @@ def read_particles_given_key_for_single_file(mmyname,blocks,keylist, ptypes,peri
                     #if debug: print('# I append ',len(x))
     for ptype in iterate(ptypes):
         for block in iterate(blocks):
-            #print('# letto ',ptype,block, res[ptype], 'len', block in res[ptype],res[ptype][block])
             if block in res[ptype] and len(res[ptype][block])>0:
                 res[ptype][block] = np.concatenate(res[ptype][block])
             else:
                 res[ptype][block] = np.array([])
-            if factor is not None:
-                res[ptype][block] *=factor[block]
-            if debug>1: print('# len: ',ptype,block,len(res[ptype][block]))
-    #if debug: print ('# res',res)
+                
+                                                                                                
     return res
 
 
@@ -1462,7 +1454,7 @@ def yield_all_files(snap_file_name):
         else:
             return
 
-def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=False, debug=0, factor=None, part_keylist =None):
+def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=False, debug=0, part_keylist =None):
     """
     given a list of files, yield the numpy data array.
     this function is very useful if you have low memory and must process a block/file per time.
@@ -1471,7 +1463,9 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
     snap_path_type = get_snap_path_type(snap_file_name)
     _periodic = None
     if debug>1: print('# g3.yield_particles_blocks_in_box')
+
     for file_name, keylist in yield_particles_file_in_box(snap_file_name, center, d, part_keylist = part_keylist):
+
         if debug>1: print('# I got ', file_name)
         if keylist is None or snap_path_type["has_keys"] == False:
             if(debug>1):
@@ -1490,7 +1484,7 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
             for ptype in iterate(ptypes):
                 if ptype not in res:
                     res[ptype]={}
-                x_pos = f.read_new(['POS '], [ptype], do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)[ptype]['POS ']
+                x_pos = f.read_new(['POS '], [ptype], do_join=False, center=center if _periodic else None, periodic=_periodic)[ptype]['POS ']
                 #perform cut of read_particles_in_box without superindexes
                 x_distance = to_spherical(x_pos, center).T[0]
                 x_mask = x_distance<d
@@ -1498,13 +1492,13 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
                     if block=='POS ':
                         _x = x_pos
                     else:
-                        _x = f.read_new(iterate(block), iterate(ptype), do_join=False, center=center if _periodic else None, periodic=_periodic, factor=factor)[ptype][block]
+                        _x = f.read_new(iterate(block), iterate(ptype), do_join=False, center=center if _periodic else None, periodic=_periodic)[ptype][block]
                     res[ptype][block]=_x[x_mask]
             if debug>2:
                 print('#res ', res)
             yield res
         else:
-            res =  read_particles_given_key_for_single_file(file_name, blocks, keylist, ptypes, periodic=periodic,center=ce, debug=debug, factor=factor)
+            res =  read_particles_given_key_for_single_file(file_name, blocks, keylist, ptypes, periodic=periodic,center=ce, debug=debug)
             yield res
 
 
@@ -1517,11 +1511,12 @@ def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=T
         ptypes=[0,1,2,3,4,5]
 
     global_res = {}
+
     for res in yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes, periodic=True, debug=debug):
+
         #
         # merge dictionaries from various block readings
         #
-
         for ptype in res:
             res_ptype = res[ptype]
             if ptype not in global_res:
@@ -1534,13 +1529,15 @@ def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=T
                         global_res[ptype][block] = res_ptype_block
                     else:
                         global_res[ptype][block] = np.concatenate((global_res[ptype][block], res_ptype_block))
+                            
 
     global_res = join_res(global_res, blocks, join_ptypes, only_joined_ptypes)
-
+    
+    
     return global_res
 
 
-def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False, factor=None):
+def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False):
     """
     Python porting of the famous IDL Klaus read_new
     """
@@ -1549,4 +1546,4 @@ def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True
         periodic = f.header.BoxSize
     else:
         periodic = None
-    return f.read_new(blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center, factor=factor)
+    return f.read_new(blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center)

@@ -9,16 +9,63 @@ Antonio Ragagnin (2020) <ragagnin.antonio@gmail.com>
 import g3read as g3, sys, numpy as np, yaml, json
 from collections import OrderedDict
 
+import os
+
+
+import pickle; #_pickle as cPickle
+
+
+
+
+import shelve
+
+
+
+
+class pdict(OrderedDict): #persistent dictionary
+        def __init__(self, filename = None, *args, **kw):
+            self.filename = filename
+            if filename is not None:
+                if os.path.isfile(filename):
+                    self.restore()
+            super(pdict,self).__init__(*args, **kw)
+            self.ks = set()
+        def restore(self):
+            if self.filename is None:
+                raise Exception('cannot restore if filename is None')
+            #if os.path.isfile(self.filename):
+                #with open(self.filename,'rb') as f:
+                #        self.update(pickle.load(f))
+                #return None
+            with shelve.open(self.filename) as d:
+                for k in d:
+                    print ('carico',k)
+                    self[k] = d[k]
+                self.ks = set()
+        def __setitem__(self, key, value):
+                 self.ks.add(key)
+                 super(pdict, self).__setitem__(key, value)
+
+        def store(self):
+            if self.filename is None:
+                raise Exception('cannot store if filename is None')
+            with shelve.open(self.filename) as db:
+                    for k in list(self.ks):
+                        print ('salvo',k)
+
+                        db[k] = self[k]
+                    self.ks = set()
+
 
 #
 # here below a small cache system to parse many FoF files fast.
 #
 
-class LimitedSizeDict(OrderedDict):
+class LimitedSizeDict(pdict):
     #stolen from https://stackoverflow.com/questions/2437617/how-to-limit-the-size-of-a-dictionary
-    def __init__(self, size_limit=20):
+    def __init__(self, filename = None, size_limit=20):
         self.size_limit = size_limit
-        OrderedDict.__init__(self)
+        super(LimitedSizeDict, self).__init__(filename = filename)
 
     def trim(self):
         while len(self) > self.size_limit:
@@ -27,7 +74,9 @@ class LimitedSizeDict(OrderedDict):
 def dict_to_pairs(d):
     return [(i, d[i]) for i in d]
 
-
+debug = False
+cache_from_filename_only = False
+cache_filename = None
 cache = None
 size_limit = 20
 
@@ -39,14 +88,26 @@ def memoize(func):
     def memoized_func(*args, **kw):
         global cache, size_limit
         if cache is None:
-            cache = LimitedSizeDict(size_limit)
-        k = str((func, tuple(args), tuple(dict_to_pairs(kw))))
+            cache = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
+            if cache_filename is not None:
+                if debug:
+                        print('# prima di restore ', cache.keys())
+                cache.restore()
+                if debug:
+                        print('# dopo di restore ', cache.keys())
+        funcname = func.__name__ if cache_from_filename_only else str(func)
+        k = str((funcname, tuple(args), tuple(dict_to_pairs(kw))))
         if k in cache and ('use_cache' in kw and kw['use_cache']==True):
             return cache[k]
-        #print('->',func, args, kw)
+        if debug:
+            print('->',k)
         result = func(*args, **kw)
         cache[k] = result
+
         cache.trim()
+        if cache_filename is not None:
+            cache.store()
+
         return result
 
     return memoized_func
@@ -188,15 +249,17 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
     if 'GRNR' not in blocks:   blocks = blocks+('GRNR',)
     if 'SOFF' not in blocks:   blocks = blocks+('SOFF',)
     if 'SLEN' not in blocks:   blocks = blocks+('SLEN',)
-    
-    found_first_subhalo = False
+    print('cerco ', groupbase, ihalo)
+    #found_first_subhalo = False
     isubhalo = -1
     ifile=-1
     for group_file in g3.yield_all_files(groupbase):
         ifile+=1
+        #print('ifile', ifile, ifile_ttart)
         if ifile_start!=None and ifile<ifile_start:
             continue
         data = read_new(group_file, blocks, 1, use_cache = use_cache)
+        #print(np.unique(data['GRNR']))
         if not np.any(data['GRNR']==ihalo):
             
             #this file dosent contain subhaloes of this halo
@@ -208,7 +271,7 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
 
         found_first_subhalo = True
         subhaloes_in_file = numpy_to_dict(data, blocks)
-        
+        #print('loppi')
         for subhalo in subhaloes_in_file:
             if (subhalo['GRNR']!=ihalo):
                 continue
@@ -270,6 +333,44 @@ def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, 
                 yield cluster2
                 return
                 
+
+
+def nfw_fit_fast_cu(mass,rs,R,nbins=50):
+    import scipy
+    import scipy.optimize
+
+    r_bins = np.logspace(np.log10(R/nbins),np.log10(R), nbins)
+    mass_m,mass_bin = np.histogram(rs, bins=r_bins, weights=mass)
+    r_r,r_bin = np.histogram(rs, bins=r_bins, weights=rs)
+    r_n,r_bin = np.histogram(rs, bins=r_bins)
+    r_avg = r_r/r_n
+    rho_my = mass_m/(4.*np.pi*(r_bin[1:]**3-r_bin[:-1]**3)/3.)
+
+    distance_cu_to_comcgs = 3.086e21
+    mass_cu_to_comcgs = 1.99e33*1.e10
+    distance3_cu_to_comcgs = distance_cu_to_comcgs**3
+    density_cu_to_comcgs = mass_cu_to_comcgs/distance3_cu_to_comcgs
+    myprofilo_nfw=lambda r,rho0,rs: rho0 / ( (r/rs) * ((1.+r/rs)**2.))
+    #print(rho_my*density_cu_to_comcgs*1e24, r_avg/R)
+    minimize_me = lambda x: np.sqrt(
+
+        np.sum(
+            np.abs(
+                np.log10(myprofilo_nfw(r_avg/R,x[0],x[1])/(rho_my*1e24*density_cu_to_comcgs))
+                )**2
+            ))
+
+
+    x0=[0.05,0.5]
+    method='L-BFGS-B'
+    xbnd=[[0.001,50.0],[0.01,10.0]]
+    r=scipy.optimize.minimize(minimize_me,x0,method=method,bounds=   xbnd)
+    return {
+        "rho0":r.x[0]/(1e24*density_cu_to_comcgs),
+        "c":1./r.x[1]
+    }
+
+
 
 
 #
