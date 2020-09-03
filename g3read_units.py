@@ -23,7 +23,7 @@ class Units(object):
             'MASS':'gmass',
             'VEL ':' gvelocity_a',
             'POS ': 'glength',
-            'RHO ': 'gmass/glength^3',
+            'RHO ': '1/glength^3',
 
         }
         self.ureg = UnitRegistry()

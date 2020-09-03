@@ -37,15 +37,32 @@ class pdict(OrderedDict): #persistent dictionary
                 #with open(self.filename,'rb') as f:
                 #        self.update(pickle.load(f))
                 #return None
-            with shelve.open(self.filename) as d:
-                for k in d:
-                    print ('carico',k)
-                    self[k] = d[k]
-                self.ks = set()
+            #with shelve.open(self.filename) as d:
+            #    for k in d:
+            #        print ('carico',k)
+            #        self[k] = d[k]
+            #    self.ks = set()
         def __setitem__(self, key, value):
                  self.ks.add(key)
                  super(pdict, self).__setitem__(key, value)
+        def __getitem__(self, key):
+                cond = super(pdict, self).__contains__(key)
+                if cond:
+                        return super(pdict, self).__getitem__(key)
+                with shelve.open(self.filename) as d:
+                        print('carico ',key)
+                        v= d[key]
+                        self[key] = v
+                        return v
+                 
+        def __contains__(self, key):
+                cond = super(pdict, self).__contains__(key)
+                if cond:
+                        return True
+                with shelve.open(self.filename) as d:
+                        return key in d
 
+        
         def store(self):
             if self.filename is None:
                 raise Exception('cannot store if filename is None')

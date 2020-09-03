@@ -23,9 +23,9 @@ ureg = units.get_u()
 
 anim = Animation(fps=50)
 
-camera = anim.add_character(CameraGadgetParticlesFollow(units = units, ureg=ureg, file_format='frames/%04d.png'))
+camera = anim.add_character(CameraGadgetParticlesFollow(units = units, ureg=ureg, file_format='frames_2/%04d.png'))
 keyframes = anim.add_character(CharacterGadgetParticles(units = units, ureg=ureg))
-size = 1e3*ureg.kpc
+size = .5e3*ureg.kpc
 t0=None
 print('base:',  snap_base+groups[0])
 g = g3matcha.yield_haloes(snap_base+groups[0], ihalo_start=0, ihalo_end=2, use_cache=True)
@@ -41,7 +41,9 @@ if t0 is None:
 
 subhalo_data_vel = next(g3matcha.yield_subhaloes(snap_base + groups[0],  ihalo,   use_cache = True, blocks=('SVEL',), halo_goff= first_halo['GOFF']))['SVEL']
 halo_vel = subhalo_data_vel
-
+halo1_pos = None
+halo1_vel = None
+t1 = None
 print('#halo pos ',halo_pos, ' halo vel ',halo_vel)
 camera.add_keyframe(t,{"GPOS":halo_pos*ureg.kpc, "GVEL":halo_vel*ureg.cvelocity, "SIZE":size})
 
@@ -56,14 +58,20 @@ for i in range(1,len(snaps)):
     halo_vel = subhalo_data_vel
     kf = keyframes.add_snapshot(snap_base+snaps[i])
     t = kf['t']
-
+    
+    halo1_pos = halo_pos
+    halo1_vel = halo_vel
     #data = keyframes.memo_read(kf['path'], first_halo_pos, size, self.blocks, -1, use_cache = True)
-    if i<2 or i>=len(snaps)-1:
+    a = keyframes.get_scale_factor(t)
+    if a<0.2 or a>0.4:
         camera.add_keyframe(t,{"GPOS":halo_pos*ureg.kpc, "GVEL":halo_vel*ureg.cvelocity, "SIZE":size})
+    
+#camera.add_keyframe(t0,{"GPOS":halo_pos*ureg.kpc, "GVEL":np.array([0.,0.,0.])*ureg.cvelocity, "SIZE":size})
+#
 
 
 
 
 
 #1/0
-anim.anim(camera, t, t_start=t0, i_start=412)
+anim.anim(camera, t, t_start=4., i_start=0)
