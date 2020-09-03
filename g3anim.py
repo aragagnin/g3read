@@ -291,13 +291,13 @@ class CameraGadgetParticlesStill(Camera, CharacterGadget):
             print('goin to imshow')
             
             #we = a.imshow(np.log10(final_image), extent = [gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size, gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size], vmin=0., vmax=5.)
-            we = a.imshow(final_image, extent = [gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size, gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size], vmin=0., vmax=4.e5)
+            we = a.imshow(final_image, extent = [gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size, gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size], vmin=0., vmax=3.e5)
             f.colorbar(we)
             print('imshow done')
 
             #continue
             frame_mask=(frame['ID  ']%Nfilter==0) & (frame['PTYPE']==4)
-            a.scatter(frame['POS '][:,0].to('glength').magnitude[frame_mask], frame['POS '][:,1].to('glength').magnitude[frame_mask],marker=',',lw=0,s =1,alpha=.6, color='lightblue', label='now')
+            a.scatter(frame['POS '][:,0].to('glength').magnitude[frame_mask], frame['POS '][:,1].to('glength').magnitude[frame_mask],marker=',',lw=0,s =1,alpha=.4, color='lightblue', label='now')
             if onion:
                 if('kf1' in frame and frame['kf1']!=None):
                     frame_mask=frame['kf1']['ID  ']%Nfilter==0

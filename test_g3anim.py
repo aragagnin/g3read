@@ -74,4 +74,4 @@ for i in range(1,len(snaps)):
 
 
 #1/0
-anim.anim(camera, t, t_start=4., i_start=0)
+anim.anim(camera, t, t_start=4., i_start=369)
