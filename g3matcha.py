@@ -6,7 +6,8 @@ Antonio Ragagnin (2020) <ragagnin.antonio@gmail.com>
 
 """
 
-import g3read as g3, sys, numpy as np, yaml, json
+from . import g3read as g3
+import numpy as np, yaml, json, sys
 from collections import OrderedDict
 
 import os
@@ -25,17 +26,18 @@ import shelve
 class pdict(OrderedDict): #persistent dictionary
         def __init__(self, filename = None, *args, **kw):
             self.filename = filename
+            self.ks = set()
             if filename is not None:
                 if os.path.isfile(filename):
                     self.restore()
             super(pdict,self).__init__(*args, **kw)
-            self.ks = set()
         def restore(self):
             if self.filename is None:
                 raise Exception('cannot restore if filename is None')
-            #if os.path.isfile(self.filename):
-                #with open(self.filename,'rb') as f:
-                #        self.update(pickle.load(f))
+            if cache_type == 'pickle':
+                if os.path.isfile(self.filename):
+                        with open(self.filename,'rb') as f:
+                                self.update(pickle.load(f))
                 #return None
             #with shelve.open(self.filename) as d:
             #    for k in d:
@@ -49,29 +51,37 @@ class pdict(OrderedDict): #persistent dictionary
                 cond = super(pdict, self).__contains__(key)
                 if cond:
                         return super(pdict, self).__getitem__(key)
-                with shelve.open(self.filename) as d:
-                        print('carico ',key)
-                        v= d[key]
-                        self[key] = v
-                        return v
+                if cache_type == 'shelve':
+                        with shelve.open(self.filename) as d:
+                                print('carico ',key)
+                                v= d[key]
+                                self[key] = v
+                                return v
                  
         def __contains__(self, key):
                 cond = super(pdict, self).__contains__(key)
                 if cond:
                         return True
-                with shelve.open(self.filename) as d:
-                        return key in d
+                if cache_type == 'shelve':
+                        with shelve.open(self.filename) as d:
+                                return key in d
+                return False
 
         
         def store(self):
             if self.filename is None:
                 raise Exception('cannot store if filename is None')
-            with shelve.open(self.filename) as db:
+            if cache_type == 'shelve':
+                with shelve.open(self.filename) as db:
                     for k in list(self.ks):
                         print ('salvo',k)
 
                         db[k] = self[k]
                     self.ks = set()
+            elif cache_type == 'pickle':
+                    
+                with open(self.filename,'wb') as f:
+                        pickle.dump(self,f)
 
 
 #
@@ -96,6 +106,7 @@ cache_from_filename_only = False
 cache_filename = None
 cache = None
 size_limit = 20
+cache_type = 'shelve'
 
 def memoize(func):
     global cache, size_limit
@@ -148,7 +159,7 @@ def numpy_to_dict(data, blocks):
     you can access data as res[0]['MASS'] instead of res['MASS'][0] as returned by read_new
     """
     keys = list(data.keys())
-    k0 = keys[0]
+    k0 = blocks[0]
     return [dict([
         (block, data[block][i]) for block in g3.iterate(blocks)
     ]) for i in range(len(data[k0]))]
@@ -318,11 +329,12 @@ def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, 
         m200c2  = cluster2['MCRI']
         boxsize1  = cluster2['boxsize']
 
+        print(gpos1, gpos2, boxsize1)
         distance = g3.periodic_distance(gpos1, gpos2, periodic=boxsize1)
         cluster2['distance'] = distance
         cluster2['int_frac'] = np.nan
 
-              
+
         if(distance<=max_distance):
 
             if (ids_block1 is not None) and (ids_block2 is not None):

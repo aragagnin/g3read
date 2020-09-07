@@ -9,8 +9,8 @@ Antonio Ragagnin <antonio.ragagnin@inaf.it>
 
 from pint import Context
 from pint import UnitRegistry
-import g3read as g3
-
+from . import g3read as g3
+import pint.unit
 
 
 class Units(object):
@@ -83,23 +83,33 @@ def gen_factor(units,f, blocks):
     return factor
 
 
-def add_units(data, factor):
-    return data*factor
+def add_units(data, factor, _Q=None):
+    if _Q is None:
+        # this in general il much slower than the _Q(...) version
+        return data*factor
+    else:
+        #lame temptative to understand if we want to leave the array dimensionless (so factor is float or int)
+        #or is it a pint quantity
+        if 'pint' in str(type(factor)):
+            return _Q(data, factor)
+        else:
+            return data*factor
 
-def add_units_blocks(data, blocks, factor):
+def add_units_blocks(data, blocks, factor, _Q=None):
     if g3.iterable(blocks):
         for block in blocks:
-            data[block] = add_units(data[block], factor[block] if block in factor else 1.)
+            data[block] = add_units(data[block], factor[block] if block in factor else 1., _Q=_Q)
     else:
-        data = add_units(data,  factor)    
+            data = add_units(data,  str(factor) , _Q=_Q)
+
     return data
 
-def add_units_blocks_ptypes(data, blocks, ptypes,factor):
+def add_units_blocks_ptypes(data, blocks, ptypes,factor, Q_=None):
     if g3.iterable(ptypes):
         for ptype in ptypes:
-            data[ptype] = add_units_blocks(data[ptype], blocks, factor)
+            data[ptype] = add_units_blocks(data[ptype], blocks, factor, _Q=_Q)
     else:
-        data = add_units_blocks(data, blocks, factor)    
+        data = add_units_blocks(data, blocks, factor, _Q=_Q)    
     return data
 
 def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False, units=None):

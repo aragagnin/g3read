@@ -1,4 +1,5 @@
-import bisect, math, g3read_units, g3maps, g3read_units as g3u, matplotlib.pyplot as plt, numba, g3read as g3, g3matcha, numpy as np
+import bisect, math, matplotlib.pyplot as plt, numba,  numpy as np
+from . import g3maps, g3read_units as g3u, g3read as g3, g3matcha
 
 debug = False
 
@@ -58,7 +59,7 @@ class Character(object):
     def get_frame(self, i, camera):
         if self.cache is not None and i in self.cache:
             return self.cache[i]
-
+        
         kf1, kf, kf2 =  self.get_keyframes_nearby(i,  camera)
         print('[%c][%c][%c]'%(
             'x' if kf1 is not None else ' ',
@@ -68,7 +69,9 @@ class Character(object):
             f  = kf
         else:
             t = kf1['t'] + (kf2['t'] - kf1['t'])*(i-kf1['i'])/(kf2['i']-kf1['i'])
+            print('# call self.interp()')
             f = self.interp(kf1, kf2, t)
+            print('# called self.interp()')
         if self.cache is not None:
             self.cache[i] = f
         return f
@@ -92,22 +95,30 @@ class Character(object):
                 i_next = _i
                 kf_next = kf
                 break
+        print('# dicts to kv_prev, kv_this, kv_next - has camera?', camera is not None)
         if kf_prev is not None:        
             camera_d = None
+
             if camera is not None:
+                print('# prev get frame')
                 camera_d =  camera.get_frame(i_prev, None)
+            print('# prev dict to  frame')
             kf_prev = self._dict_to_frame(kf_prev, camera_d)
             kf_prev['is_keyframe']=True
         if kf_this is not None:        
             camera_d = None
             if camera is not None:
+                print('# this get frame')
                 camera_d =  camera.get_frame(i_this, None)
+            print('# this dict to  frame')
             kf_this = self._dict_to_frame(kf_this, camera_d)
             kf_this['is_keyframe']=True
         if kf_next is not None:        
             camera_d = None
             if camera is not None:
+                print('# bext get frame')
                 camera_d =  camera.get_frame(i_next, None)
+            print('# next dict to  frame')
             kf_next = self._dict_to_frame(kf_next, camera_d)
             kf_next['is_keyframe']=True
         return kf_prev, kf_this, kf_next
@@ -164,16 +175,19 @@ class Animation(object):
             ichar=-1
             for character in self._characters:
                 ichar+=1
+                print('# get_frame()')
                 f = character.get_frame(i, camera)
+                print('# get_frame done()')
                 if character==camera:
                     camera_d = f
                 else:
                     frame.append(f)
 
+            print('# render()')
             camera.render(frame, i, my_t, camera_d)
         camera.render_end()
 
-@numba.jit(nopython=True)
+@numba.njit
 def interp_0_1(x0p,  x1, x1p,  t):
     D = 0
     C = x0p
@@ -182,7 +196,7 @@ def interp_0_1(x0p,  x1, x1p,  t):
     return A*t*t*t + B*t*t  + C*t + D
 
 
-@numba.jit(nopython=True)
+@numba.njit
 def interp(t0, x0, x0p, t1, x1, x1p, t):
     delta_x = x1 - x0
     delta_t = (t1 - t0)
@@ -194,12 +208,15 @@ def interp(t0, x0, x0p, t1, x1, x1p, t):
 
 
 
-@numba.jit(nopython=True)
-def interp_values( t1, ids1, pos1, vel1, data1,  t2, ids2, pos2, vel2, data2, t3, ids3, pos3, data3, Ndata):
+@numba.njit
+def interp_values_chunk( t1, ids1, pos1, vel1, data1,  t2, ids2, pos2, vel2, data2, t3, ids3, pos3, data3, Ndata, i_chunk, chunks):
         N3 = len(ids3)
         ids1_count = 0
         ids2_count = 0
         for i in range(N3):
+            if (i%chunks)!=i_chunk:
+                continue
+                
             id3 = ids3[i]
             while ids1_count<len(ids1)-1 and ids1[ids1_count]<id3:
                 ids1_count +=1
@@ -227,6 +244,15 @@ def interp_values( t1, ids1, pos1, vel1, data1,  t2, ids2, pos2, vel2, data2, t3
                 for j in range(Ndata):
                     data3[i][j*2] = 0.
                     data3[i][j*2+1] =  data2[ids2_count][j] 
+
+@numba.njit(parallel=True)
+def interp_values( t1, ids1, pos1, vel1, data1,  t2, ids2, pos2, vel2, data2, t3, ids3, pos3, data3, Ndata):
+    chunks = 8
+    for i_chunk in numba.prange(chunks):
+        print(i_chunk)
+        interp_values_chunk( t1, ids1, pos1, vel1, data1,  t2, ids2, pos2, vel2, data2, t3, ids3, pos3, data3, Ndata, i_chunk, chunks)
+    
+
 
 class CharacterGadget(Character):
     def __init__(self, time_factor=10., props=None):
@@ -259,45 +285,54 @@ class CameraGadgetParticlesStill(Camera, CharacterGadget):
         self.file_format = file_format
 
     def render(self, frames, i, t, camera_d):
-        print('# render ',i,t)
+        print('# render() ',i,t)
         f,a  = plt.subplots(1)
         gpos = camera_d['GPOS']
-        size = camera_d['SIZE'].to('glength').magnitude
-        Nfilter=10
+        size = camera_d['SIZE'].to('glength').magnitude*2
+        Nfilter=100
         onion = False
         img_size = 64
         for frame in frames:
             #tit = 'KF: x%s\nPOS: %s\nID: %s'%(frame['is_keyframe'] if 'is_keyframe' in frame else '',str(frame['POS '][0]), str(frame['ID  '][0]))e
             time_a = self.get_scale_factor(frame['t'])
             time_gyr = self.t_to_time(time_a).to('yr').magnitude
-            tit = 'a = %.3f, z=%.1f, t=%.1eGyr, %s'%(time_a, 1/time_a-1., time_gyr, 'kf'  if 'is_keyframe' in frame else ' ')
+            tit = 'a = %.3f, z=%.1f, %s'%(time_a, 1/time_a-1.,  'kf'  if 'is_keyframe' in frame else ' ')
             print(tit)
             a.set_title(tit)
 
-            
-            final_image_t = g3maps.smac_gen_image_matrix(img_size)
-            PROPERTY = 'TEMP'
-            frame_mask=frame['PTYPE']==0
-            T = frame["TEMP"][frame_mask]
-            T[T>1e6]=0.
-            T[T<0]=0.
-            d = {'MASS':frame['MASS'][frame_mask], "POS ":frame["POS "][frame_mask], "RHO ":frame["RHO "][frame_mask]*self.ureg.gmass/(self.ureg.clength**3), "TEMP":T*self.ureg.dimensionless}
-            print(d)
-            g3maps.smac_add_chunk(d, 0, gpos, 2, camera_d['SIZE'], camera_d['SIZE'], img_size, PROPERTY, self.ureg.dimensionless, final_image_t, sph=False, image_w = True)
-            final_image = np.nan_to_num(final_image_t)
-            print(final_image)
-            final_image[final_image>1e30]=0.
-            final_image[final_image<0]=0.
-            print('goin to imshow')
-            
-            #we = a.imshow(np.log10(final_image), extent = [gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size, gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size], vmin=0., vmax=5.)
-            we = a.imshow(final_image, extent = [gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size, gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size], vmin=0., vmax=3.e5)
-            f.colorbar(we)
-            print('imshow done')
+            if not self.dmo:
+                final_image_t = g3maps.smac_gen_image_matrix(img_size)
+                PROPERTY = 'TEMP'
+                frame_mask=frame['PTYPE']==0
+                T = frame["TEMP"][frame_mask]
+                T[T>1e6]=0.
+                T[T<0]=0.
+                if not self.dmo:
+                    d = {'MASS':frame['MASS'][frame_mask], "POS ":frame["POS "][frame_mask], "RHO ":frame["RHO "][frame_mask]*self.ureg.gmass/(self.ureg.clength**3), "TEMP":T*self.ureg.dimensionless}
+                else:
+                    d = {'MASS':frame['MASS'][frame_mask], "POS ":frame["POS "][frame_mask]}
+                
+                print(d)
+                g3maps.smac_add_chunk(d, 0, gpos, 2, camera_d['SIZE'], camera_d['SIZE'], img_size, PROPERTY, self.ureg.dimensionless, final_image_t, sph=False, image_w = True)
+                final_image = np.nan_to_num(final_image_t)
+                print(final_image)
+                final_image[final_image>1e30]=0.
+                final_image[final_image<0]=0.
+                print('goin to imshow')
+                
+                we = a.imshow(final_image, extent = [gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size, gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size], vmin=0., vmax=3.e5)
+                f.colorbar(we)
+                print('imshow done')
 
-            #continue
-            frame_mask=(frame['ID  ']%Nfilter==0) & (frame['PTYPE']==4)
-            a.scatter(frame['POS '][:,0].to('glength').magnitude[frame_mask], frame['POS '][:,1].to('glength').magnitude[frame_mask],marker=',',lw=0,s =1,alpha=.4, color='lightblue', label='now')
+                #continue
+            if self.dmo:
+                frame_mask=(frame['ID  ']%Nfilter==0)
+                a.scatter(frame['POS '][:,0].to('glength').magnitude[frame_mask], frame['POS '][:,1].to('glength').magnitude[frame_mask],marker=',',lw=0,s =1,alpha=.1, color='black', label='now')
+
+            else:
+                frame_mask=(frame['ID  ']%Nfilter==0) & (frame['PTYPE']==4)
+                a.scatter(frame['POS '][:,0].to('glength').magnitude[frame_mask], frame['POS '][:,1].to('glength').magnitude[frame_mask],marker=',',lw=0,s =1,alpha=.5, color='lightblue', label='now')
+            print('# scattero')
             if onion:
                 if('kf1' in frame and frame['kf1']!=None):
                     frame_mask=frame['kf1']['ID  ']%Nfilter==0
@@ -310,36 +345,41 @@ class CameraGadgetParticlesStill(Camera, CharacterGadget):
             a.set_xlim([gpos[0].to('glength').magnitude-size, gpos[0].to('glength').magnitude+size])
             a.set_ylim([gpos[1].to('glength').magnitude-size, gpos[1].to('glength').magnitude+size])
             #a.legend()
+        print('# savefig()')
         f.savefig(self.file_format%(i))
+        print('# done()')
 
 @g3matcha.memoize
-def memo_read_real(path, pos, size, blocks, ptypes, use_cache = False):
+def memo_read_real(path, pos, size, blocks, ptypes, use_cache = False, dmo=False, sort=True):
     data= g3.read_particles_in_box(path, pos, size, blocks, ptypes)
-    ids1 = data['ID  ']
+    if sort:
+        ids1 = data['ID  ']
     
-    N = len(ids1)
-    Ngas = len(data['RHO '])
-    avg_rho = np.mean(data['RHO '])
+        N = len(ids1)
+    if not dmo:
+        Ngas = len(data['RHO '])
+        avg_rho = np.mean(data['RHO '])
 
-    data['RHO '] = np.concatenate((data['RHO '], np.zeros(N-Ngas)+avg_rho))
-    data['TEMP'] = np.concatenate((data['TEMP'], np.zeros(N-Ngas)+avg_rho))
+        data['RHO '] = np.concatenate((data['RHO '], np.zeros(N-Ngas)+avg_rho))
+        data['TEMP'] = np.concatenate((data['TEMP'], np.zeros(N-Ngas)+avg_rho))
 
-
-    print('# begin argsort')
-    ids1_argsort = np.argsort(ids1)
-    for k in data:
-        data[k] = data[k][ids1_argsort]
+    if sort:
+        print('# begin argsort')
+        ids1_argsort = np.argsort(ids1)
+        for k in data:
+            data[k] = data[k][ids1_argsort]
             
-    print('# begin filter')
+        print('# begin filter')
 
-    data['DIST'] = g3.to_spherical(data['POS '], pos).T[0]
+        data['DIST'] = g3.to_spherical(data['POS '], pos).T[0]
 
     return data
 
 class CameraGadgetParticlesFollow(CameraGadgetParticlesStill):
-    def __init__(self, units = None, ureg= None, file_format = 'frame%04d.png'):
+    def __init__(self, units = None, ureg= None, file_format = 'frame%04d.png', dmo=False):
         super(CameraGadgetParticlesFollow, self).__init__(props = ["GPOS","SIZE","GVEL"], file_format = file_format)
         self.om0 = .272
+        self.dmo = dmo
         self.q0 = self.om0 /2.
         self.h0 = .704 #TODO: read hubble constant h0 from simulation data
         self.ureg=  ureg
@@ -370,12 +410,20 @@ class CameraGadgetParticlesFollow(CameraGadgetParticlesStill):
         return d
 
 
+@g3matcha.memoize
+def get_snap_info(snap_path, use_cache = False):
+        f = g3.GadgetFile(g3.get_one_file(snap_path))
+        return f.header.HubbleParam, f.header.time
 class CharacterGadgetParticles(CharacterGadget):
-    def __init__(self, blocks=None, time_factor=10., ureg=None, units=None):
+    def __init__(self, blocks=None, time_factor=10., ureg=None, units=None, dmo=False):
         blocks_default = ["POS ","VEL ","MASS","ID  ","RHO ",'TEMP']
+        if dmo:
+            blocks_default = ["POS ","VEL ","MASS","ID  "]
+
         super(CharacterGadgetParticles, self).__init__(time_factor=time_factor)
         self.blocks = list(set(blocks + blocks_default)) if blocks is not None else blocks_default #we get uniq values
         self.prop = "MASS"
+        self.dmo = dmo
         self.om0 = .2
         self.q0 = .1
         self.h0 = .7 #TODO: read hubble constant h0 from simulation data
@@ -383,14 +431,14 @@ class CharacterGadgetParticles(CharacterGadget):
         self.units = units
         self.f = None
         self.factor = None
-        self.read_factor = 4.
+        self.read_factor = 8.
     def add_snapshot(self, snap_path):
-        
-        f = g3.GadgetFile(g3.get_one_file(snap_path))
+        h,t = get_snap_info(snap_path, use_cache = True)
+
         if self.ureg is None : #we still ahvent set units
             self.units = g3u.Units();
-            self.units.set_context(f.header.HubbleParam, 1., debug=True) #we will fo stuff in comoving so a=1.
-        return self.add_keyframe(self.get_time(f), {"path":snap_path})
+            self.units.set_context(h, 1., debug=True) #we will fo stuff in comoving so a=1.
+        return self.add_keyframe(self.get_time(time=t), {"path":snap_path})
         
     # we cache reading of data
     def memo_read(self,path, pos, size, blocks, ptypes, use_cache = False):
@@ -399,18 +447,32 @@ class CharacterGadgetParticles(CharacterGadget):
         if self.factor is None:
             self.factor = g3u.gen_factor(self.units, self.f, blocks)
             self.factor['DIST'] = self.ureg.glength
-            self.factor['RHO '] = self.ureg.dimensionless
-
-        v = dict(memo_read_real(path, pos.to('glength').magnitude, size.to('glength').magnitude, blocks, ptypes, use_cache = True))
-
-        return  g3u.add_units_blocks(v, blocks, self.factor)
-
+            if not self.dmo:
+                self.factor['RHO '] = self.ureg.dimensionless
+        print('# memo_read_real')
+        d = memo_read_real(path, pos.to('glength').magnitude, size.to('glength').magnitude, blocks, ptypes, use_cache = True, dmo = self.dmo)
+        v = dict(d)
+        print('#add units')
+        vu =  g3u.add_units_blocks(v, blocks, self.factor, _Q=self.ureg.Quantity)
+        print('# done')
+        return vu
         
     def default_dict_to_frame(self, d, camera):
+        print('# dict to frame')
         super(CharacterGadgetParticles, self).default_dict_to_frame(d,camera)
-        r = self.memo_read(d['path'], camera["GPOS"], camera["SIZE"]*self.read_factor, self.blocks, [0,4], use_cache=  True)
+        if self.dmo:
+            print('# dmo read')
 
+            r = self.memo_read(d['path'], camera["GPOS"], camera["SIZE"]*self.read_factor, self.blocks, -1, use_cache=  True)
+            print('# dmo readed')
+
+        else:
+            r = self.memo_read(d['path'], camera["GPOS"], camera["SIZE"]*self.read_factor, self.blocks, [0,4], use_cache=  True)
+
+        print('# copy')
         data = dict(r)
+
+
         for k in data:
             data[k] = data[k].copy()
         size = camera["SIZE"]
@@ -419,12 +481,14 @@ class CharacterGadgetParticles(CharacterGadget):
         #    data[k] = data[k][x_distance_mask]
         data['t'] = d['t']
         data['i'] = d['i']
+        print('# done')
 
 
         return data
     
 
     def interp(self, kf1,kf2,t3):
+        print('# begin interp')
         t1 = 0
         t2 = 0
         t3_old = t3
@@ -453,17 +517,19 @@ class CharacterGadgetParticles(CharacterGadget):
         l1 = len(kf1['PTYPE'])
         data1 = np.zeros((l1,4))
         data1[:,0] = kf1['PTYPE']
-        data1[:,1] = kf1['RHO ']
-        data1[:,2] = kf1['TEMP']
+        if not self.dmo:
+            data1[:,1] = kf1['RHO ']
+            data1[:,2] = kf1['TEMP']
         data1[:,3] = kf1['MASS']
 
         l2 = len(kf2['PTYPE'])
         data2 = np.zeros((l2,4))
         data2[:,0] = kf2['PTYPE']
-        data2[:,1] = kf2['RHO ']
-        data2[:,2] = kf2['TEMP']
+        if not self.dmo:
+            data2[:,1] = kf2['RHO ']
+            data2[:,2] = kf2['TEMP']
         data2[:,3] = kf2['MASS']
-
+        rho3  = None
 
         if len(ids1)>0 and len(ids2)>0:
             assert(t1<t2)
@@ -473,7 +539,11 @@ class CharacterGadgetParticles(CharacterGadget):
             N3 = len(ids3)
             pos3 = np.zeros(N3*3).reshape((N3,3))
             data3 = np.zeros((N3,4*2))
+            print('# call numba interp')
+
             interp_values(t1, ids1, pos1, vel1, data1, t2, ids2, pos2, vel2, data2, t3, ids3, pos3, data3, 4)
+            print('# called numba interp')
+
             ptype3 = np.array(data3[:,0*2], dtype=np.int32)
             rho3 = data3[:,1*2]
             temp3 = data3[:,2*2]+(data3[:,2*2+1]-data3[:,2*2])*(t3-t1)/(t2-t1)
@@ -501,8 +571,10 @@ class CharacterGadgetParticles(CharacterGadget):
             print(kf2)
             print(t3)
             raise Exception('?')
-        pos3*= self.ureg.kpc
-        lego= {"POS ": pos3, "ID  ":ids3,"kf1":kf1, "kf2":kf2, "t":t3_old,"PTYPE":ptype3, 'RHO ':rho3, 'TEMP':temp3, 'MASS':mass3*self.ureg.gmass}
-        print('lego')
-        print(lego)
+        pos3 = self.ureg.Quantity(pos3, self.ureg.kpc)
+        print('# interped')
+
+        lego= {"POS ": pos3, "ID  ":ids3,"kf1":kf1, "kf2":kf2, "t":t3_old,"PTYPE":ptype3, 'RHO ':rho3, 'TEMP':temp3, 'MASS':self.ureg.Quantity(mass3, self.ureg.gmass)}
+
+        print('# goin to return')
         return lego

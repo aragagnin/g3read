@@ -1163,7 +1163,7 @@ def  peano_hilbert_key (bits, flag_feedback, x, y, z):
         mask=mask>>1
 
     return key
-import os
+
 
     
 @jit(nopython=True)
@@ -1547,3 +1547,60 @@ def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True
     else:
         periodic = None
     return f.read_new(blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center)
+
+#
+# here  below a series of very ancient and forgotten routines to read group_tab_XXX.Y files
+#
+
+def read_int_array(f,n):
+    return np.array(struct.unpack("%di"%n,f.read(4*n)))
+
+def read_float_array(f,n):
+    return np.array(struct.unpack("%df"%n,f.read(4*n)))
+
+def read_fof(filename, boxsize = None):
+    "read one FoF file (as group_tab_040, or group_tab_040.0)" 
+    with open(filename, "rb") as fin:
+        Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask =  struct.unpack("iiiiii",fin.read(4*6))
+        print(Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask )
+        TotNids=TotNids_1 #+TotNids_2*2e32
+        if (TotNids_2):
+            #TotNids
+            pass
+            #raise Exception('too many haloes, one must combine the two integers into a long long')
+        #print(Ngroups, TotNgroups, Nids,  TotNids_1, TotNids_2, '->', TotNids, ntask)
+        #Ngroups = ntask # I dont know why
+        lens = read_int_array(fin, Ngroups)
+        offsets = read_int_array(fin, Ngroups)
+        mass = read_float_array(fin, Ngroups)
+        cm = read_float_array(fin, Ngroups*3).reshape(Ngroups,3)
+        if boxsize is not None:
+            cm =  cm - boxsize/2.
+        vels = read_float_array(fin, Ngroups*3).reshape(Ngroups,3)
+
+        return {"header":{"Ngroups":Ngroups, "NTasks":ntask,"NIDs":Nids}, "len":lens, "offset":offsets, "MFOF":mass, "GPOS":cm, "GVEL":vels}
+
+def read_fofs(filename_base, boxsize = None):
+    "read and join multiple FoF file of the same snapshot (es, input 'group_tab_040' will read files .0, .1, etc..)" 
+    i=0
+    result = {}
+    if (os.path.isfile(filename_base)):
+        #it's single-file output
+        return read_fof(filename_base, boxsize = boxsize)
+    # here we process multi-file output
+    while True:
+        filename = '%s.%d'%( filename_base ,i)
+        if(not os.path.isfile(filename)):
+            if i==0:
+                raise Exception('Unable to open file %s'%filename)
+            break
+        data = read_fof(filename, boxsize = boxsize)
+        del data['header']
+        for key in data.keys():
+            if key not in result:
+                result[key]=data[key]
+            else:
+                result[key]=np.concatenate((result[key], data[key]))
+        i=i+1
+    return result
+

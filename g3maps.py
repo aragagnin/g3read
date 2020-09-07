@@ -7,8 +7,7 @@
 # by Antonio Ragagagnin <antonio.ragagnin@inaf.it>
 #
 
-import g3read_units as g3u
-import g3read as g3
+from . import g3read_units as g3u, g3read as g3
 import sys
 import numpy as np
 from numba import jit
