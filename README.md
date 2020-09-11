@@ -233,7 +233,7 @@ For instance:
 import g3read as g3, g3matcha as matcha, numpy as np
 groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
 # read first 10 fof haloes
-for halo  in  matcha.yield_haloes(groupbase,  ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
+for halo  in  matcha.yield_haloes(groupbase,  ihalo_end, blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
     print('halo number:', halo['ihalo'], halo)
 ``` 
 
@@ -255,7 +255,7 @@ For instance, let's expand the previous example with the reading of subhaloes:
 import g3read as g3, g3matcha as matcha, numpy as np
 groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
 # read first 10 fof haloes
-for halo  in  matcha.yield_haloes(groupbase,  ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
+for halo  in  matcha.yield_haloes(groupbase,  ihalo_end, blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
     print('halo number:', halo['ihalo'], halo)
     #now loop over subhaloes of the parent halo
     for subhalo in  matcha.yield_subhaloes(groupbase, ihalo=halo['ihalo']):
@@ -271,7 +271,7 @@ Here below an example that read both FoF and subhalo IDs. Note that we must prov
 import g3read as g3, g3matcha as matcha, numpy as np
 groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
 # read first 10 fof haloes
-for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
+for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end, blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
     print('halo number:', halo['ihalo'])
     print('halo IDs: ', halo['ids'])
     #now loop over subhaloes of the parent halo
@@ -294,7 +294,7 @@ matcha.cache_filename = 'cache'
 
 groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
 # read first 10 fof haloes
-for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS'), use_cache= True):
+for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end, blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS'), use_cache= True):
     print('halo number:', halo['ihalo'])
     print('halo IDs: ', halo['ids'])
     #now loop over subhaloes of the parent halo
