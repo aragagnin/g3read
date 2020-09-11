@@ -19,7 +19,7 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
   * [Looping through haloes](#looping-through-haloes)
   * [Looping through sub haloes](#looping-through-sub-haloes)
   * [Getting haloes and subhaloes  IDs](#getting-haloes-and-subhaloes--ids)
-  * [Speeding-up SubFind/FoF  reading by caching data](#speeding-up-subfind-fof--reading-by-caching-data)
+  * [Speeding-up SubFind/FoF  reading by caching data](#speeding-up-subfindfof--reading-by-caching-data)
   * [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
 - [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
 - [g3maps.py: Maps of Large Simulations](#g3mapspy-maps-of-large-simulations)
