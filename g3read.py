@@ -1562,7 +1562,7 @@ def read_fof(filename, boxsize = None):
     "read one FoF file (as group_tab_040, or group_tab_040.0)" 
     with open(filename, "rb") as fin:
         Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask =  struct.unpack("iiiiii",fin.read(4*6))
-        print(Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask )
+        #print(Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask )
         TotNids=TotNids_1 #+TotNids_2*2e32
         if (TotNids_2):
             #TotNids
