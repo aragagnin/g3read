@@ -20,12 +20,6 @@ import pickle; #_pickle as cPickle
 
 
 
-
-import shelve
-
-
-
-
 class pdict(OrderedDict): #persistent dictionary
         def __init__(self, filename = None, *args, **kw):
             self.filename = filename
@@ -55,6 +49,7 @@ class pdict(OrderedDict): #persistent dictionary
                 if cond:
                         return super(pdict, self).__getitem__(key)
                 if cache_type == 'shelve' and self.filename is not None:
+                        import shelve
                         with shelve.open(self.filename) as d:
                                 print('carico ',key)
                                 v= d[key]
@@ -66,6 +61,7 @@ class pdict(OrderedDict): #persistent dictionary
                 if cond:
                         return True
                 if cache_type == 'shelve' and self.filename is not None:
+                        import shelve
                         with shelve.open(self.filename) as d:
                                 return key in d
                 return False
@@ -108,8 +104,8 @@ debug = False
 cache_from_filename_only = False
 cache_filename = None
 cache = None
-size_limit = 20
-cache_type = 'shelve'
+size_limit = 2000
+cache_type = 'pickle'
 
 def memoize(func):
     global cache, size_limit
