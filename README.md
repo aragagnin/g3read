@@ -11,8 +11,10 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
   * [Read a single Gadget file](#read-a-single-gadget-file)
   * [Access the header](#access-the-header)
   * [Reading FOF/Subfind](#reading-fof-subfind)
+  * [Reading old-format group_tab fof](#)
   * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
   * [Writing  back to a (new) file](#writing-back-to-a-new-file)
+- [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
 - [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
 - [g3maps.py: Maps of Large Simulations](#g3mapspy-maps-of-large-simulations)
 - [c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/](#c2pap-batchpy--batch-jobs-for-http-c2papcosmosimuclrzde-)
@@ -186,6 +188,126 @@ potential = pp.gravitational_potential(masses, positions, center).potential
 
 f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
+
+## Reading group_tab FoF output
+
+`g3read`  provides a reader for the very ancient and forgotten format of FoF `group_tab options.` Gadget3 can write many optional and unformatted information that `g3read` cannot understand. Currently it can onlt read FoF position `GPOS`, velocity `GVEL` and grouplen `GLEN` and mass MFOF`. Here an example to read from one single `group_tab` file or more:
+
+```python
+
+old_fof_format_data = read_fof('./groups_030/group_tab_030.0')
+centers = old_fof_format_data['GPOS']
+
+old_fofs_format_data = read_fof('./groups_030/group_tab_030') #here we get all fof outputs concatenated
+centers = old_fofs_format_data['GPOS']
+```
+
+
+# g3matcha.py: Looping through haloes, their subhaloes and IDs
+
+`g3matcha.py` (which depends on `g3read`) provides high level functionality to perform for loop over haloes and their subhaloes.
+Check file `test_g3read_ids.py` for a complete example.
+
+## Looping through haloes
+
+To loop over haloes use `yield_haloes`, with the following parameters:
+
+- `group_base`: the base path of the SubFind group file, e.g. `groups_000/sub_000`
+- `ihalo_start`: first halo index to be returned (default 0)
+- `ihalo_end`: maximum halo index to be read (default None, to read all haloes)
+- `min_mcri`: skip all haloes with a mass lower than `min_mcri`
+- `blocks`: FoF blocks to be read, default: `["GPOS", "RCRI", "MCRI", "GOFF", "GLEN"]`
+- `with_ids`: returns also the halo IDs in the block `"ids"` (its lowercase and of three character to stress that it is artificial), default is `False`.
+
+and as result yields a list of haloes with the chosen properties plus the index of halo `ihalo`, the SubFind file index that contains it `ihalo_file`, its position in said file `ihalo_in_file` (start from 0 at each SubFind file) and `boxsize` from the file header (see previous section).
+
+For instance:
+
+```python
+import g3read as g3, g3matcha as matcha, numpy as np
+groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
+# read first 10 fof haloes
+for halo  in  matcha.yield_haloes(groupbase,  ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
+    print('halo number:', halo['ihalo'], halo)
+``` 
+
+## Looping through sub haloes
+
+To loop over haloes use `yield_subhaloes`, with the following parameters:
+
+- `group_base`: as `yield_haloes`
+- `ihalo`: index of parent `halo`
+- `ifile_start`: from which SubFind partial file it must start reading (typycally you can set it as `parent_halo['ihalo_file']` to speed computation), default is 0
+- `whith_ids`: if true, each returned subhalo will contian also their IDs. You must provide the parent halo IDs with the keyword `halo_ids`. IDs will be provided with tbe aritificial block `ids`
+- `halo_ids`: halo ids of the parent halo
+
+It returns a list of subhaloes of the given parent haloes. 
+
+For instance, let's expand the previous example with the reading of subhaloes:
+
+```python
+import g3read as g3, g3matcha as matcha, numpy as np
+groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
+# read first 10 fof haloes
+for halo  in  matcha.yield_haloes(groupbase,  ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
+    print('halo number:', halo['ihalo'], halo)
+    #now loop over subhaloes of the parent halo
+    for subhalo in  matcha.yield_subhaloes(groupbase, ihalo=halo['ihalo']):
+        print('    sub halo information:, subhalo)
+```    
+
+
+## Getting haloes and subhaloes  IDs
+
+Here below an example that read both FoF and subhalo IDs. Note that we must provide the infromation ` halo_goff = halo['GOFF']` to `yield_subhaloes` in order to grab sub halo IDs.
+
+```python
+import g3read as g3, g3matcha as matcha, numpy as np
+groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
+# read first 10 fof haloes
+for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
+    print('halo number:', halo['ihalo'])
+    print('halo IDs: ', halo['ids'])
+    #now loop over subhaloes of the parent halo
+    for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'] ihalo=halo['ihalo']):
+        print('    sub halo IDs:, subhalo['ids'])
+```
+
+## Speeding-up SubFind/FoF  reading by caching data
+
+`g3matcha` routines can be cached  to a dict in order to make reading  by adding `use_cache=True` to function calls.
+You can also cache results to file in order to recycle reads when running the same script multiple time (we all know you'll run your script many many times) by providing  provide a `g3matcha.cache_filename`.
+
+Here how it will look like in the previous example
+
+```python
+import g3read as g3, g3matcha as matcha, numpy as np
+
+#set to None if you do not want to cache data to file (cache will stay in memory then avaiable only for this run)
+matcha.cache_filename = 'cache'
+
+groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
+# read first 10 fof haloes
+for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS'), use_cache= True):
+    print('halo number:', halo['ihalo'])
+    print('halo IDs: ', halo['ids'])
+    #now loop over subhaloes of the parent halo
+    for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'] ihalo=halo['ihalo'], use_cache = True):
+        print('    sub halo IDs:, subhalo['ids'])
+
+# the script will be much faster now!
+```
+
+
+## Matching haloes of two snapshots
+
+
+in order to match haloes from snapshot A to snapshot B, run `./g3matcha.py` with the following parameters: snapdir of snapshot A, group folder of snapshot A, DM match type of snapshot A (1 if bao, 2 if PATCH_IO DMO), path of snap B, path of groups B, DM partycle type of snap B.
+
+```bash
+./g3matcha.py ./snapdir_136/snap_136 ./groups_136/sub_136 1   ./snapdir_dmo_136/snap_136 ./groups_dmo_136/sub_136 2
+```
+
 
 # g3read_units.py: Handling Gadgets Units of Measurement
 
