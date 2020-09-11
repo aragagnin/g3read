@@ -258,7 +258,7 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end, blocks=('
     print('halo number:', halo['ihalo'])
     print('halo IDs: ', halo['ids'])
     #now loop over subhaloes of the parent halo
-    for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'] ihalo=halo['ihalo']):
+    for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'], ihalo=halo['ihalo']):
         print('    sub halo IDs:, subhalo['ids'])
 ```
 
@@ -281,7 +281,7 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end, blocks=('
     print('halo number:', halo['ihalo'])
     print('halo IDs: ', halo['ids'])
     #now loop over subhaloes of the parent halo
-    for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'] ihalo=halo['ihalo'], use_cache = True):
+    for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'], ihalo=halo['ihalo'], use_cache = True):
         print('    sub halo IDs:, subhalo['ids'])
 
 # the script will be much faster now!
