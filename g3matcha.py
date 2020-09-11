@@ -5,8 +5,11 @@ These routines help match Gadget haloes between boxes and snapshots; to loop ove
 Antonio Ragagnin (2020) <ragagnin.antonio@gmail.com>
 
 """
-
-from . import g3read as g3
+try:
+        from . import g3read as g3
+except:
+        import g3read as g3
+        
 import numpy as np, yaml, json, sys
 from collections import OrderedDict
 
@@ -51,7 +54,7 @@ class pdict(OrderedDict): #persistent dictionary
                 cond = super(pdict, self).__contains__(key)
                 if cond:
                         return super(pdict, self).__getitem__(key)
-                if cache_type == 'shelve':
+                if cache_type == 'shelve' and self.filename is not None:
                         with shelve.open(self.filename) as d:
                                 print('carico ',key)
                                 v= d[key]
@@ -62,7 +65,7 @@ class pdict(OrderedDict): #persistent dictionary
                 cond = super(pdict, self).__contains__(key)
                 if cond:
                         return True
-                if cache_type == 'shelve':
+                if cache_type == 'shelve' and self.filename is not None:
                         with shelve.open(self.filename) as d:
                                 return key in d
                 return False
@@ -277,7 +280,7 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
     if 'GRNR' not in blocks:   blocks = blocks+('GRNR',)
     if 'SOFF' not in blocks:   blocks = blocks+('SOFF',)
     if 'SLEN' not in blocks:   blocks = blocks+('SLEN',)
-    print('cerco ', groupbase, ihalo)
+
     #found_first_subhalo = False
     isubhalo = -1
     ifile=-1
