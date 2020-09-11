@@ -16,9 +16,7 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
   * [Writing  back to a (new) file](#writing--back-to-a-new-file)
   * [Reading group_tab FoF output](#reading-group-tab-fof-output)
 - [g3matcha.py: Looping through haloes, their subhaloes and IDs](#g3matchapy--looping-through-haloes--their-subhaloes-and-ids)
-  * [Looping through haloes](#looping-through-haloes)
-  * [Looping through sub haloes](#looping-through-sub-haloes)
-  * [Getting haloes and subhaloes  IDs](#getting-haloes-and-subhaloes--ids)
+  * [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   * [Speeding-up SubFind/FoF  reading by caching data](#speeding-up-subfindfof--reading-by-caching-data)
   * [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
 - [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
@@ -214,7 +212,7 @@ centers = old_fofs_format_data['GPOS']
 `g3matcha.py` (which depends on `g3read`) provides high level functionality to perform for loop over haloes and their subhaloes.
 Check file `test_g3read_ids.py` for a complete example.
 
-## Looping through haloes
+## Looping through haloes and sub haloes
 
 To loop over haloes use `yield_haloes`, with the following parameters:
 
@@ -226,18 +224,6 @@ To loop over haloes use `yield_haloes`, with the following parameters:
 - `with_ids`: returns also the halo IDs in the block `"ids"` (its lowercase and of three character to stress that it is artificial), default is `False`.
 
 and as result yields a list of haloes with the chosen properties plus the index of halo `ihalo`, the SubFind file index that contains it `ihalo_file`, its position in said file `ihalo_in_file` (start from 0 at each SubFind file) and `boxsize` from the file header (see previous section).
-
-For instance:
-
-```python
-import g3read as g3, g3matcha as matcha, numpy as np
-groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
-# read first 10 fof haloes
-for halo  in  matcha.yield_haloes(groupbase,  ihalo_end, blocks=('GLEN', 'MCRI', 'RCRI', 'GPOS')):
-    print('halo number:', halo['ihalo'], halo)
-``` 
-
-## Looping through sub haloes
 
 To loop over haloes use `yield_subhaloes`, with the following parameters:
 
@@ -261,9 +247,6 @@ for halo  in  matcha.yield_haloes(groupbase,  ihalo_end, blocks=('GLEN', 'MCRI',
     for subhalo in  matcha.yield_subhaloes(groupbase, ihalo=halo['ihalo']):
         print('    sub halo information:, subhalo)
 ```    
-
-
-## Getting haloes and subhaloes  IDs
 
 Here below an example that read both FoF and subhalo IDs. Note that we must provide the infromation ` halo_goff = halo['GOFF']` to `yield_subhaloes` in order to grab sub halo IDs.
 
