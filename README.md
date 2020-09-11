@@ -259,7 +259,7 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end, blocks=('
     print('halo IDs: ', halo['ids'])
     #now loop over subhaloes of the parent halo
     for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'], ihalo=halo['ihalo']):
-        print('    sub halo IDs:, subhalo['ids'])
+        print('    sub halo IDs':, subhalo['ids'])
 ```
 
 ## Speeding-up SubFind/FoF  reading by caching data
@@ -282,7 +282,7 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end, blocks=('
     print('halo IDs: ', halo['ids'])
     #now loop over subhaloes of the parent halo
     for subhalo in  matcha.yield_subhaloes(groupbase,  with_ids=True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'], ihalo=halo['ihalo'], use_cache = True):
-        print('    sub halo IDs:, subhalo['ids'])
+        print('    sub halo IDs:', subhalo['ids'])
 
 # the script will be much faster now!
 ```
