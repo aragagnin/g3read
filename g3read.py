@@ -1578,7 +1578,7 @@ def read_fof(filename, boxsize = None):
             cm =  cm - boxsize/2.
         vels = read_float_array(fin, Ngroups*3).reshape(Ngroups,3)
 
-        return {"header":{"Ngroups":Ngroups, "NTasks":ntask,"NIDs":Nids}, "len":lens, "offset":offsets, "MFOF":mass, "GPOS":cm, "GVEL":vels}
+        return {"header":{"Ngroups":Ngroups, "NTasks":ntask,"NIDs":Nids}, "GLEN":lens, "offset":offsets, "MFOF":mass, "GPOS":cm, "GVEL":vels}
 
 def read_fofs(filename_base, boxsize = None):
     "read and join multiple FoF file of the same snapshot (es, input 'group_tab_040' will read files .0, .1, etc..)" 

@@ -16,7 +16,7 @@ import g3read as g3, g3matcha as matcha, numpy as np
 groupbase = '/HydroSims/Magneticum/Box1a/mr_bao/groups_144/sub_144'
 
 #if you do not need IDs, set it to false for a faster lookup
-with_ids = True
+with_ids =False
 
 #if you do not need to obtain particles of each halo/subhalo,
 #set to False for a faster execution time

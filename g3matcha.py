@@ -22,66 +22,29 @@ import pickle; #_pickle as cPickle
 
 class pdict(OrderedDict): #persistent dictionary
         def __init__(self, filename = None, *args, **kw):
+            super(pdict,self).__init__(*args, **kw)
             self.filename = filename
-            self.ks = set()
             if filename is not None:
                 if os.path.isfile(filename):
                     self.restore()
-            super(pdict,self).__init__(*args, **kw)
         def restore(self):
             if self.filename is None:
                 raise Exception('cannot restore if filename is None')
             if cache_type == 'pickle':
                 if os.path.isfile(self.filename):
                         with open(self.filename,'rb') as f:
-                                self.update(pickle.load(f))
-                #return None
-            #with shelve.open(self.filename) as d:
-            #    for k in d:
-            #        print ('carico',k)
-            #        self[k] = d[k]
-            #    self.ks = set()
-        def __setitem__(self, key, value):
-                 self.ks.add(key)
-                 super(pdict, self).__setitem__(key, value)
-        def __getitem__(self, key):
-                cond = super(pdict, self).__contains__(key)
-                if cond:
-                        return super(pdict, self).__getitem__(key)
-                if cache_type == 'shelve' and self.filename is not None:
-                        import shelve
-                        with shelve.open(self.filename) as d:
-                                print('carico ',key)
-                                v= d[key]
-                                self[key] = v
-                                return v
+                                d = pickle.load(f)
+                        self.update(d)
                  
-        def __contains__(self, key):
-                cond = super(pdict, self).__contains__(key)
-                if cond:
-                        return True
-                if cache_type == 'shelve' and self.filename is not None:
-                        import shelve
-                        with shelve.open(self.filename) as d:
-                                return key in d
-                return False
-
         
         def store(self):
             if self.filename is None:
                 raise Exception('cannot store if filename is None')
-            if cache_type == 'shelve':
-                with shelve.open(self.filename) as db:
-                    for k in list(self.ks):
-                        print ('salvo',k)
 
-                        db[k] = self[k]
-                    self.ks = set()
             elif cache_type == 'pickle':
-                    
                 with open(self.filename+'~','wb') as f:
-                        pickle.dump(self,f)
-                os.replace(self.filename+'~',self.filename)
+                        pickle.dump(dict(self),f)
+                os.rename(self.filename+'~',self.filename)
 
 #
 # here below a small cache system to parse many FoF files fast.
@@ -101,7 +64,7 @@ def dict_to_pairs(d):
     return [(i, d[i]) for i in d]
 
 debug = False
-cache_from_filename_only = False
+cache_from_filename_only = True
 cache_filename = None
 cache = None
 size_limit = 2000
@@ -124,7 +87,7 @@ def memoize(func):
                         print('# dopo di restore ', cache.keys())
         funcname = func.__name__ if cache_from_filename_only else str(func)
         k = str((funcname, tuple(args), tuple(dict_to_pairs(kw))))
-        if k in cache and ('use_cache' in kw and kw['use_cache']==True):
+        if k in cache.keys() and ('use_cache' in kw and kw['use_cache']==True):
             return cache[k]
         if debug:
             print('->',k)
@@ -277,7 +240,7 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
     if 'SOFF' not in blocks:   blocks = blocks+('SOFF',)
     if 'SLEN' not in blocks:   blocks = blocks+('SLEN',)
 
-    #found_first_subhalo = False
+    found_first_subhalo = False
     isubhalo = -1
     ifile=-1
     for group_file in g3.yield_all_files(groupbase):
