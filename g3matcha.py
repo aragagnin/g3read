@@ -79,9 +79,9 @@ class pdict(OrderedDict): #persistent dictionary
                     self.ks = set()
             elif cache_type == 'pickle':
                     
-                with open(self.filename,'wb') as f:
+                with open(self.filename+'~','wb') as f:
                         pickle.dump(self,f)
-
+                os.replace(self.filename+'~',self.filename)
 
 #
 # here below a small cache system to parse many FoF files fast.
