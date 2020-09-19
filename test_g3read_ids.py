@@ -29,6 +29,8 @@ read_particles_blocks = ['MASS','ID  ','POS ']
 #switch it on to compute concentration of halo 
 compute_concentration = True
 
+
+matcha.debug=1
 """ BEGIN """
 
 printf = g3.printf

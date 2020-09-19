@@ -163,8 +163,8 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
             continue
         if debug>0:
             print('# get_halo_ids: read file ',group_file)
-        glen_file = len(ids_in_file)
         ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
+        glen_file = len(ids_in_file)
         if debug>0:
             print( '# get_halo_ids:' ,group_file, 'goff_file', goff_file, 'len IDS', len(ids_in_file), 'goff:',goff, 'glen:', glen, 'ifile_start',ifile_start)
         if goff>=goff_file:
