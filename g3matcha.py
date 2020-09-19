@@ -153,13 +153,20 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
     partial_ids = None
     finish=False
     goff_file = goff_start
+    if debug>0:
+        print('# get_halo_ids: read files, ifile_start= ',ifile_start) 
     for group_file in g3.yield_all_files(groupbase):
         ifile+=1
+        if debug>0:
+            print('# get_halo_ids: iterating file ',group_file)
         if(ifile < ifile_start):
             continue
-        ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
+        if debug>0:
+            print('# get_halo_ids: read file ',group_file)
         glen_file = len(ids_in_file)
-        #print(group_file, 'goff_file', goff_file, 'len IDS', len(ids_in_file), 'goff:',goff, 'glen:', glen, 'ifile_start',ifile_start)
+        ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
+        if debug>0:
+            print( '# get_halo_ids:' ,group_file, 'goff_file', goff_file, 'len IDS', len(ids_in_file), 'goff:',goff, 'glen:', glen, 'ifile_start',ifile_start)
         if goff>=goff_file:
             #check if we reached a file with our [goff, goff+glen] boundary
             if goff+glen>goff_file + glen_file:
@@ -171,13 +178,16 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
             else:
                 _partial_ids = ids_in_file[goff-goff_file:goff-goff_file+glen]
                 finish = True
+                
             if partial_ids is None:
                 partial_ids = _partial_ids
             else:
                 partial_ids = np.concatenate((partial_ids, _partial_ids))
-                
+            print('# get_halo_ids: partial_ids = ',partial_ids)    
             if finish :
-                return (partial_ids, ifile, goff_file)
+                break
+                
+    return (partial_ids, ifile, goff_file)
 
             
 def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_cache = False, blocks=None, with_ids=False):
