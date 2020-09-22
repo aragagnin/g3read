@@ -156,6 +156,7 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
     partial_ids = None
     finish=False
     goff_file = goff_start
+
     if debug>0:
         print('# get_halo_ids: read files, ifile_start= ',ifile_start) 
     for group_file in g3.yield_all_files(groupbase):
@@ -169,27 +170,54 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
         ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
         glen_file = len(ids_in_file)
         if debug>0:
-            print( '# get_halo_ids:' ,group_file, 'goff_file', goff_file, 'len IDS', len(ids_in_file), 'goff:',goff, 'glen:', glen, 'ifile_start',ifile_start)
-        if goff>=goff_file:
-            #check if we reached a file with our [goff, goff+glen] boundary
-            if goff+glen>goff_file + glen_file:
-                #in this case we have to also read next file
-                _partial_ids = ids_in_file[goff-goff_file:]
-                #goff = goff#+glen_file
-                #glen = glen#-glen_file-(goff-goff_file)
-                goff_file += glen_file
-            else:
-                _partial_ids = ids_in_file[goff-goff_file:goff-goff_file+glen]
+            print( '# get_halo_ids:' ,group_file, 'halo goff',goff, 'halo glen',glen, 'file cumulative goff', goff_file,' file glen',glen_file)
+            if (goff+glen<=goff_file):
+                if debug>0:
+                    print( '# get_halo_ids:   (goff+glen<=goff_file) => we read all IDs')
                 finish = True
+            elif goff>(goff_file+glen_file): 
+                if debug>0:
+                    print( '# get_halo_ids:  goff>(goff_file+glen_file) => we didnt reach our first file yet' )
+               
+            else:
+                # papabile
+                start_reading = goff - goff_file
+                if start_reading<0:
+                    if debug>0:
+                            print( '# get_halo_ids: IDs started in the prev file, I pick IDs from the begginning of the file')
+                    start_reading = 0
+                
+                end_reading = start_reading+glen
+                if end_reading>glen_file:
+                    if debug>0:
+                            print( '# get_halo_ids: IDs will finish in the next file(s): I read up to end of file')
+                    end_reading = glen_file
+                else:
+                    if debug>0:
+                            print( '# get_halo_ids: Since we do not read till the end of file => this is the last file to read')
+                    finish = True
+                if debug>0:
+                        print( '# get_halo_ids: I read in the following range, ', start_reading, end_reading)
+                
+
+                _partial_ids = ids_in_file[start_reading:end_reading]
+
+
                 
             if partial_ids is None:
                 partial_ids = _partial_ids
             else:
                 partial_ids = np.concatenate((partial_ids, _partial_ids))
-            print('# get_halo_ids: partial_ids = ',partial_ids)    
-            if finish :
-                break
-                
+            if debug>0:
+                print('# get_halo_ids: partial_ids.shape = ',partial_ids.shape)    
+
+        if debug>0:
+                print( '#')
+
+
+        if finish :
+            break
+        goff_file += glen_file        
     return (partial_ids, ifile, goff_file)
 
             
