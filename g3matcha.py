@@ -77,28 +77,31 @@ def memoize(func):
     """
     def memoized_func(*args, **kw):
         global cache, size_limit
-        if cache is None:
-            cache = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
+        if 'use_cache' not in kw or kw['use_cache']==False:
+                return func(*args, **kw)
+        else:
+            if cache is None:
+                cache = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
+                if cache_filename is not None:
+                        if debug:
+                                print('# prima di restore ', cache.keys())
+                        cache.restore()
+                        if debug:
+                                print('# dopo di restore ', cache.keys())
+            funcname = func.__name__ if cache_from_filename_only else str(func)
+            k = str((funcname, tuple(args), tuple(dict_to_pairs(kw))))
+            if k in cache.keys():
+                return cache[k]
+            if debug:
+                print('->',k)
+            result = func(*args, **kw)
+            cache[k] = result
+
+            cache.trim()
             if cache_filename is not None:
-                if debug:
-                        print('# prima di restore ', cache.keys())
-                cache.restore()
-                if debug:
-                        print('# dopo di restore ', cache.keys())
-        funcname = func.__name__ if cache_from_filename_only else str(func)
-        k = str((funcname, tuple(args), tuple(dict_to_pairs(kw))))
-        if k in cache.keys() and ('use_cache' in kw and kw['use_cache']==True):
-            return cache[k]
-        if debug:
-            print('->',k)
-        result = func(*args, **kw)
-        cache[k] = result
+                    cache.store()
 
-        cache.trim()
-        if cache_filename is not None:
-            cache.store()
-
-        return result
+            return result
 
     return memoized_func
 
