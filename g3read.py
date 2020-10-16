@@ -1548,6 +1548,35 @@ def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True
         periodic = None
     return f.read_new(blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center)
 
+def get_gadget_base_path(sim_path, snap, snap_prefix='snap_', folder_prefix ='snapdir_', snap_middle='', none_on_error=False):
+    """ this routine searches for a snapshot or group file given a simulation base path (e.g. /gss/gss_work/DRES_murante/CLUSTERS/Dianoga/D2/dmo/10x_agn)
+    and a snapshot (e.g. 070) and returns /gss/gss_work/DRES_murante/CLUSTERS/Dianoga/D2/dmo/10x_agn/snapdir_070/snap_070 or 
+    /gss/gss_work/DRES_murante/CLUSTERS/Dianoga/D2/dmo/10x_agn/snap_070 depending on how you saved the snapshots.""" 
+    if  isinstance(snap, int):
+       snap = '%03d'%snap
+    path1 = sim_path+'/'+snap_prefix+snap_middle+snap
+    if os.path.exists(path1):
+        return path1
+    if os.path.exists(path1+'.0'):
+        return path1
+    path2 = sim_path+'/'+folder_prefix+snap+'/'+snap_prefix+snap_middle+snap
+    if os.path.exists(path2):
+        return path2
+    if os.path.exists(path2+'.0'):
+        return path2
+    if none_on_error:
+        return None
+    else:
+        raise IOError("Cannot find '%s', '%s.0', '%s', nor '%s.0'; pass 'none_on_error=True' to mute this error and get None as return value "%(path1, path1, path2, path2))
+
+def get_snap_base_path(sim_path, snap, snap_prefix='snap_', folder_prefix ='snapdir_', snap_middle='',  none_on_error=False):
+    return get_gadget_base_path(sim_path, snap, snap_prefix='snap_', folder_prefix ='snapdir_', snap_middle=snap_middle, none_on_error=none_on_error)
+
+def get_group_base_path(sim_path, snap, snap_prefix='sub_', folder_prefix ='groups_', snap_middle='', none_on_error=False):
+    "same as get_snap_base_path but to find group_XXX/sub_XXX vs. sub_XXX"
+    return get_gadget_base_path(sim_path, snap, snap_prefix=snap_prefix , folder_prefix =folder_prefix, snap_middle=snap_middle,  none_on_error=none_on_error)
+
+
 #
 # here  below a series of very ancient and forgotten routines to read group_tab_XXX.Y files
 #
@@ -1603,4 +1632,5 @@ def read_fofs(filename_base, boxsize = None):
                 result[key]=np.concatenate((result[key], data[key]))
         i=i+1
     return result
+
 
