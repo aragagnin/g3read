@@ -1597,7 +1597,7 @@ def read_float_array(f,n):
 def read_fof(filename, boxsize = None):
     "read one FoF file (as group_tab_040, or group_tab_040.0)" 
     import warnings
-    warnings.warn("read_fof() was only tested on Dianoga zoom-in results.")
+    warnings.warn("read_fof() was only tested on Dianoga zoom-in results. Remember that SubFind files contains FoF output too, use them if available!")
     with open(filename, "rb") as fin:
         Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask =  struct.unpack("iiiiii",fin.read(4*6))
         #print(Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask )
