@@ -1580,6 +1580,13 @@ def get_group_base_path(sim_path, snap, snap_prefix='sub_', folder_prefix ='grou
 #
 # here  below a series of very ancient and forgotten routines to read group_tab_XXX.Y files
 #
+"""
+NOTE:
+
+The read_fof routines read read_group_tab_XXX.Y are only tested on Dianoga simulation outputs!
+"""
+
+
 
 def read_int_array(f,n):
     return np.array(struct.unpack("%di"%n,f.read(4*n)))
@@ -1589,14 +1596,23 @@ def read_float_array(f,n):
 
 def read_fof(filename, boxsize = None):
     "read one FoF file (as group_tab_040, or group_tab_040.0)" 
+    import warnings
+    warnings.warn("read_fof() was only tested on Dianoga zoom-in results.")
     with open(filename, "rb") as fin:
         Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask =  struct.unpack("iiiiii",fin.read(4*6))
         #print(Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask )
         TotNids=TotNids_1 #+TotNids_2*2e32
         if (TotNids_2):
-            #TotNids
-            pass
-            #raise Exception('too many haloes, one must combine the two integers into a long long')
+            """
+            We need to read the following:
+              my_fwrite(&Ngroups, sizeof(int), 1, fd);
+              my_fwrite(&TotNgroups, sizeof(int), 1, fd);
+              my_fwrite(&Nids, sizeof(int), 1, fd);
+              my_fwrite(&TotNids, sizeof(long long), 1, fd);
+              my_fwrite(&NTask, sizeof(int), 1, fd);
+
+            """
+            raise Exception('too many haloes, one must combine fix the routine in order to combine the two integers into a long long')
         #print(Ngroups, TotNgroups, Nids,  TotNids_1, TotNids_2, '->', TotNids, ntask)
         #Ngroups = ntask # I dont know why
         lens = read_int_array(fin, Ngroups)
