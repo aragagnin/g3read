@@ -34,6 +34,7 @@ import signal
 import time
 import json
 import urllib
+import sys
 
 
 BASE = "https://c2papcosmosim.uc.lrz.de" 
@@ -41,6 +42,12 @@ __version__= "1.0 [22 november 2018]"
 __author__= "Antonio Ragagnin"
 globy = {}
 
+
+def dec(x):
+    if sys.version_info >= (3, 0):
+        return x.read().decode('utf-8')
+    else:
+        return x.read()
         
 def find_between( s, first, last ):
     "just return the first sub-string of `s` between string delimeters `first` and `last`"
@@ -68,7 +75,7 @@ def get_between_tags(res, tag, flags=None):
 
 def get_jobs_ids(br):
     "open the url with the job lists and parse the HTML to find all job ids"
-    res = br.open(BASE+"/jobs").read()
+    res = dec(br.open(BASE+"/jobs"))
     #the job ids are inside a <code></code> HTML tag
     jobids = get_between_tags(res, 'code')
     no_error_jobids = []
@@ -84,7 +91,7 @@ def login(br, username, password):
     br.select_form(nr=0)
     br.form.find_control("email").value = username
     br.form.find_control("password").value = password
-    res = br.submit().read()
+    res = dec(br.submit())
     if 'password' in res:
         raise Exception("Login failed for user=%s."%(username))
 
@@ -115,7 +122,7 @@ def log(*s,**l):
 
 
 
-def download(br, naming, jobid, job):
+def download(br, naming, jobid, job, cluster):
     """ Given the `jobid` and the dictionary of the job parameters `job` 
     (`job` is a dictionary computed by `get_job_param`),
     it connects to the FTP and download job results. 
@@ -125,6 +132,8 @@ def download(br, naming, jobid, job):
     '{simulation_name}/{SnapNum}/{cluster_id}/{application_name}/{jobid}'  """
     data = dict(job)
     data["jobid"]=jobid
+    for k in cluster:
+        data['csv_%s'%k] = cluster[k]
     name = naming.format(**data)
     os.system("mkdir -p %s"%(name))
     code_to_download = "wget ftp://129.187.239.195:/%s/%s.tar.gz -qO -|  tar -xz -C %s/ --strip-components=1 %s"%(jobid, jobid, name, jobid)
@@ -137,7 +146,7 @@ def download(br, naming, jobid, job):
 
 def wait(br, jobid):
     "given a `jobid`, this function check the list of jobs until `jobid` results as 'COMPLETED' "
-    res = br.open(BASE+"/jobs").read()
+    res = dec(br.open(BASE+"/jobs"))
     status=None
     while status!="COMPLETED":
         row = find_between(res, '<code>%s</code>'%(jobid), '</tr>')
@@ -146,7 +155,7 @@ def wait(br, jobid):
         if status!="COMPLETED":
             log("now waiting %ds..."%(globy["time_sleep"]))
             time.sleep(globy["time_sleep"])
-            res = br.open(BASE+"/jobs").read()
+            res = dec(br.open(BASE+"/jobs"))
 
     return jobid
 
@@ -161,12 +170,12 @@ def fill(br,f,v, debug=False, byval=False):
         for item in br.form.find_control(f).items:
             if v == item.attrs['label']:
                 br.form.find_control(f).value=[item.attrs['value']]
-                print(f,"-> [",v,']=',item.attrs['value'])
+                log(f,"-> [",v,']=',item.attrs['value'])
                 item_set = True
         if item_set == False:
             raise Exception("Error: field %s has no value %s"%(f,v))
     else:
-        print(f,"->",v)
+        log(f,"->",v)
         br.form.find_control(f).readonly = False
         if br.form.find_control(f).type == 'select':
             br.form.find_control(f).value = [v]
@@ -191,7 +200,7 @@ def submit(br, cluster_id, args):
         else:
             fill(br, k, str(v), debug=True, byval=False)
     #sys.exit(0)
-    res = br.submit(name="submit_field").read()
+    res = dec(br.submit(name="submit_field"))
     log("Job submitted.")
     return  find_between(res, "ID <a href='/jobs/",'/')
 
@@ -200,7 +209,7 @@ def cmpf(a,b,precision=0, debug=False):
     s='%%.%df'%(precision)
     if debug:
         pass
-        print( s%float(a) == s%float(b), s%float(a) , s%float(b) )
+        log( s%float(a) == s%float(b), s%float(a) , s%float(b) )
     return  s%float(a) == s%float(b)
 
 def compare(job, args, debug=True, service_data=None):
@@ -264,23 +273,23 @@ def save_cache(cache_jobs, cache):
 
 def query(br, query, page, limit):
     "personal use"
-    j = br.open(BASE+"/query/raw?"+urllib.urlencode((('q',query),('p',page),('l',limit)))).read()
+    j = dec(br.open(BASE+"/query/raw?"+urllib.parse.urlencode((('q',query),('p',page),('l',limit)))))
     o = json.loads(j)
     return o
 
 def get_cache(cache_jobs):
     "load file from cache if exists, otherwise create one." 
     try:
-        print("open %s"%(cache_jobs))
+        log("open %s"%(cache_jobs))
         with open( cache_jobs, "rb" )  as f:
             pass
     except:
         cache =  {}
-        print("write %s"%(cache_jobs))
+        log("write %s"%(cache_jobs))
         save_cache(cache_jobs, cache)
         return cache
 
-    print("read %s"%(cache_jobs))
+    log("read %s"%(cache_jobs))
     with open( cache_jobs, "rb" )  as f:
         cache = pickle.load(f)
     return cache
@@ -292,7 +301,7 @@ def  get_job_or_cache(br, jobid, cache_jobs):
     if not there, load it from the web. Then the job is saved in the cache"""
     if cache_jobs is None:
         log("Loading: %s"%(jobid))
-        res = br.open(BASE+"/jobs/%s/show"%(jobid)).read()
+        res = dec(br.open(BASE+"/jobs/%s/show"%(jobid)))
         p = get_job_param(res)
         return p
 
@@ -305,7 +314,7 @@ def  get_job_or_cache(br, jobid, cache_jobs):
     jobs = cache["jobs"]
     if jobid not in jobs:
         log("Loading: %s"%(jobid))
-        res = br.open(BASE+"/jobs/%s/show"%(jobid)).read()
+        res = dec(br.open(BASE+"/jobs/%s/show"%(jobid)))
         p = get_job_param(res)
         jobs[jobid]=p
         save_cache(cache_jobs, cache)
@@ -323,10 +332,10 @@ def get_sims_and_snaps(br, snap_id):
     in order to find which simulation we are using.
     Then, the browser select the simulation and the snap, so the jobs
     are executed there."""
-    res = br.open(BASE+'/map/find').read()
+    res = dec(br.open(BASE+'/map/find'))
     j = json.loads(find_between(res, "myApp.constant('angulardata',", ")\n"))
     simulations = j["simulations"]
-    print (simulations)
+    log(simulations)
 
     select_simulation = None
     select_snap = None
@@ -337,7 +346,7 @@ def get_sims_and_snaps(br, snap_id):
         br.select_form(nr=0)
         #log("test %s with id=%d"%(simulation["name"], simulation["id"]))
         fill(br, "simulation", str(simulation["id"]), byval=True)
-        res = br.submit().read()
+        res = dec(br.submit())
         j = json.loads(find_between(res, "myApp.constant('angulardata',", ")\n"))
         snaps = j["snaps"]
         for snap in snaps:
@@ -350,7 +359,7 @@ def get_sims_and_snaps(br, snap_id):
                 log("Found %s/%s"%(select_simulation,select_snap)) 
                 br.submit()
                 #return str(simulation["id"]), str(int(snap_id))
-                return  str(simulation["id"]), str(int(snap_id)), select_simulation, select_snap, redshift
+                return  str(simulation["id"]), str(int(snap_id)), select_simulation, select_snap, redshift, snaps
     raise Exception("Unable to set simulation/snap")
 
 class MyBrowser(mechanize.Browser):
@@ -358,8 +367,8 @@ class MyBrowser(mechanize.Browser):
     I do this because the web portal sometimes give a 502 error and if
     if happens while you are processing thousand of jobs, it is annoying
     to wake up in the morning and discover that the code crashed because of a 502 error."""
-    def __new__(cls, value, *args, **kwargs):
-        return super(MyBrowser, cls).__new__(cls, value)
+    def __new__(cls,  *args, **kwargs):
+        return super(MyBrowser, cls).__new__(cls)
     def open(br, page):
         printf("Opening %s\n"%(page),err=True)
         while True:
@@ -367,11 +376,66 @@ class MyBrowser(mechanize.Browser):
                 
                 return mechanize.Browser.open(br, page)
             except Exception as e:
-                if e.code == 502:
-                    printf("Bad Gateway :( retrying in 60 seconds..\n",err=True)
+                if e.code == 502 or e.code == 500:
+                    printf("Server had error %s: retrying in 60 seconds..\n"%(str(e.code)),err=True)
                     time.sleep(globy["time_sleep"])
                 else:
                     raise
+
+
+
+def match(br, cluster, snaps, snapid, icluser_in_dataset):
+    snap_id_pos = None
+    for isnap, snap in enumerate(snaps):
+        #print(isnap, snap, snapid, snap['id'], str(snap['id'])==str(snapid))
+        if str(snap['id'])==str(snapid):
+            snap_id_pos = isnap
+            break
+    
+    cluster_id = cluster["# id"]
+    log('selecting current cluster id', cluster_id)
+    br.open(BASE+'/map/smac')
+    br.select_form(nr=0)
+    fill(br, "cluster_id", str(int(cluster_id)), debug=True)
+    res = dec(br.submit())
+    j = json.loads(find_between(res, "myApp.constant('angulardata',", ")\n"))
+
+                
+    if icluser_in_dataset==0:
+        print('# id,snap_id,uid,x,y,z,origid,snap_z')
+        #query(br, query, page, limit):
+    j = query(br, 'SELECT uid,x,y,z FROM cluster where id=%d and snap_id=%d'%(int (cluster_id), int(snapid)), 0, 1)
+    uid = int(j['rows'][0][0])
+    x =  j['rows'][0][1]
+    y =  j['rows'][0][2]
+    z =  j['rows'][0][3]
+    print('%d,  %s, %d, %s, %s, %s, %d, %s'%(int(cluster_id), snapid, uid, x,y,z, int(cluster_id),snaps[snap_id_pos]['redshift']))
+    
+    new_cluster_id = cluster_id
+    for i in range(snap_id_pos+1, len(snaps)):
+        snap_id_new = snaps[i]['id']
+        log('go to snap id', snap_id_new, 'pos',i)
+        br.open(BASE+'/map/smac')
+        br.select_form(nr=0)
+        fill(br, "cluster_id", str(int(new_cluster_id)), debug=True)
+        fill(br, "snapshot", str(int(snap_id_new)), byval=True)
+     
+        res = dec(br.submit())
+        
+        j = json.loads(find_between(res, "myApp.constant('angulardata',", ")\n"))
+        new_cluster_id = j['session']['cluster_id']
+        
+        log('==========> found cluster_id:', int(new_cluster_id), snap_id_new)
+        j = query(br, 'SELECT uid,x,y,z FROM cluster where id=%d and snap_id=%d'%(int (new_cluster_id), int(snap_id_new)), 0, 1)
+        uid = int(j['rows'][0][0])
+        x =  j['rows'][0][1]
+        y =  j['rows'][0][2]
+        z =  j['rows'][0][3]
+        print('%d,  %s, %d, %s, %s, %s, %d, %s'%(int(new_cluster_id),  snap_id_new,  uid, x,y,z,int(cluster_id),snaps[i]['redshift']))
+
+        #simulationid, snapid, simulation_name, snap_name, redshift, snaps =  get_sims_and_snaps(br, snap_id_new)
+    log('done for this object')
+
 def main():
     log ("")
     log ("===================================================")
@@ -395,7 +459,7 @@ def main():
     parser.add_argument('-v', '--verbose',  action="count", help='Display HTTPs requests')
     parser.add_argument('-w', '--weak-ssl', action='store_true', help="Doesn't check SSL certificate.", default=True)
     parser.add_argument('-e', '--existing-jobs', action='store_true',  help="Search for jobs with same parameters. If found, download its data.", default=False)
-    parser.add_argument('-s', '--service', choices=['SMAC','SimCut','PHOX','query'], help="Choose a service between SMAC, SimCut, PHOX. Check the lower/upper case.", required=True)
+    parser.add_argument('-s', '--service', choices=['SMAC','SimCut','PHOX','query','match'], help="Choose a service between SMAC, SimCut, PHOX. Check the lower/upper case.", required=True)
     parser.add_argument('-t', '--time-sleep', help="How frequently check the status of the job in seconds. Default=60", default=60, type=int)
     parser.add_argument('-a', '--auto-download', help="Download data after execution, default=True", default=True, type=bool)
     parser.add_argument('-p', '--params', help="""Form parameters.
@@ -423,11 +487,14 @@ def main():
     query
     page
     limit
+
+    there is the special job 'match' that will find progenitors and descendant by looking ad previous and next snapshots:
+    direction: 'parent'/'descendant'
     """,  nargs='+', default=["IMG_Z_SIZE=200","r500factor=1.0"])
     parser.add_argument('-j', '--cache-jobs', help="Cache jobs values in file", default=None, type=str)# "jobs.cache", type=str)
     parser.add_argument('-n', '--naming', help="""
     Where to save data. Use interpolation with %%(variable name). 
-    Variable name can be  %%(jobid) or any parameter on https://c2papcosmosim.uc.lrz.de/jobs/%%(jobid)/show.
+    Variable name can be  %%(jobid) or any parameter on https://c2papcosmosim.uc.lrz.de/jobs/%%(jobid)/show. or any value on the csv (e.g {csv_id_cluster})
 
     default: {simulation_name}/{SnapNum}/{cluster_id}/{application_name}/{jobid}
     
@@ -500,6 +567,7 @@ def main():
         service_data = yaml.load(br.open(BASE+"/static/phox.yml"))
 
 
+
     if args.service == "query":
         if 'query' not in args.ps:
             log("specify --param query='query'")
@@ -519,14 +587,14 @@ def main():
             sys.exit(1)
         h = j['header']
         rs = j['rows']
-        print '#',
+        
         for label in h:
-            print label,
-        print
+            print (label, end='')
+
         for row in rs:
             for cell in row:
-                print cell,
-            print
+                print (cell, end='')
+
         sys.exit(0)
     jobs = {}
     if args.cache_jobs:
@@ -543,20 +611,31 @@ def main():
 
     log ("Reading clusters list from: '%s' ..."%(args.file))
     clusters=[]
-    with open(args.file, 'rb') as f:
+    with open(args.file, 'r') as f:
+
         clusters = [{k: float(v) for k, v in row.items()}
              for row in csv.DictReader(f, skipinitialspace=True)] #no idea, I just found this code on stack overflow 
     log ("Read %d clusters."%(len(clusters)))
 
 
-    simulationid, snapid, simulation_name, snap_name, redshift =  get_sims_and_snaps(br,clusters[0]["snap_id"])
+
     #print(simulation_name, snap_name,  redshift)
-    args.ps["simulation"]=Parameter(simulationid, is_option_number=True)
-    args.ps["snapshot"]=Parameter(snapid, is_option_number=True)
-    args.ps["redshift"]=Parameter(redshift, is_option_number=False)
 
 
-    for cluster in clusters:
+    last_snap_id = None
+    
+    for icluster_in_dataset, cluster in enumerate(clusters):
+            if last_snap_id is None or last_snap_id!=cluster['snap_id']:
+                log('setting snapshot')
+                simulationid, snapid, simulation_name, snap_name, redshift, snaps =  get_sims_and_snaps(br,cluster['snap_id'])
+                args.ps["simulation"]=Parameter(simulationid, is_option_number=True)
+                args.ps["snapshot"]=Parameter(snapid, is_option_number=True)
+                args.ps["redshift"]=Parameter(redshift, is_option_number=False)
+                last_snap_id = snapid
+                
+            if args.service=="match":
+                match(br, cluster, snaps, snapid, icluster_in_dataset)
+                continue                    
             found_job = None
             cluster_id = cluster["uid"]
             log("")
@@ -589,7 +668,7 @@ def main():
                 log("Old job: %s."% (found_job) )
 
             wait(br, found_job)
-            download(br, args.naming, found_job,  get_job_or_cache(br, found_job, args.cache_jobs))
+            download(br, args.naming, found_job,  get_job_or_cache(br, found_job, args.cache_jobs), cluster)
             #sys.exit(0)
 
 
