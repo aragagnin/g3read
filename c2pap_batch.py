@@ -273,6 +273,7 @@ def save_cache(cache_jobs, cache):
 
 def query(br, query, page, limit):
     "personal use"
+    log(query)
     j = dec(br.open(BASE+"/query/raw?"+urllib.parse.urlencode((('q',query),('p',page),('l',limit)))))
     o = json.loads(j)
     return o
@@ -384,7 +385,7 @@ class MyBrowser(mechanize.Browser):
 
 
 
-def match(br, cluster, snaps, snapid, icluser_in_dataset):
+def match(br, cluster, snaps, snapid, icluser_in_dataset, args):
     snap_id_pos = None
     for isnap, snap in enumerate(snaps):
         #print(isnap, snap, snapid, snap['id'], str(snap['id'])==str(snapid))
@@ -400,21 +401,25 @@ def match(br, cluster, snaps, snapid, icluser_in_dataset):
     res = dec(br.submit())
     j = json.loads(find_between(res, "myApp.constant('angulardata',", ")\n"))
 
+
+        #query(br, query, page, limit):
+    j = query(br, 'SELECT * FROM cluster where id=%d and snap_id=%d'%(int (cluster_id), int(snapid)), 0, 1)
+    uid = int(j['rows'][0][0])
                 
     if icluser_in_dataset==0:
-        print('# id,snap_id,uid,x,y,z,origid,snap_z')
-        #query(br, query, page, limit):
-    j = query(br, 'SELECT uid,x,y,z FROM cluster where id=%d and snap_id=%d'%(int (cluster_id), int(snapid)), 0, 1)
-    uid = int(j['rows'][0][0])
-    x =  j['rows'][0][1]
-    y =  j['rows'][0][2]
-    z =  j['rows'][0][3]
-    print('%d,  %s, %d, %s, %s, %s, %d, %s'%(int(cluster_id), snapid, uid, x,y,z, int(cluster_id),snaps[snap_id_pos]['redshift']))
-    
+        keys = j['header']
+        print('# id,%s,origid,snap_z'%(','.join(keys)))
+        
+
+    print('%d,  %s,%s, %d, %s'%(int(cluster_id), snapid, ','.join(j['rows'][0]), int(cluster_id),snaps[snap_id_pos]['redshift']))
+    _snaps = None
+    if 'snaps' in args.ps:
+        _snaps = args.ps['snaps'].split(',')
+
     new_cluster_id = cluster_id
     for i in range(snap_id_pos+1, len(snaps)):
+
         snap_id_new = snaps[i]['id']
-        log('go to snap id', snap_id_new, 'pos',i)
         br.open(BASE+'/map/smac')
         br.select_form(nr=0)
         fill(br, "cluster_id", str(int(new_cluster_id)), debug=True)
@@ -425,24 +430,30 @@ def match(br, cluster, snaps, snapid, icluser_in_dataset):
         j = json.loads(find_between(res, "myApp.constant('angulardata',", ")\n"))
         new_cluster_id = j['session']['cluster_id']
         
-        log('==========> found cluster_id:', int(new_cluster_id), snap_id_new)
-        j = query(br, 'SELECT uid,x,y,z FROM cluster where id=%d and snap_id=%d'%(int (new_cluster_id), int(snap_id_new)), 0, 1)
+        j = query(br, 'SELECT * FROM cluster where id=%d and snap_id=%d'%(int (new_cluster_id), int(snap_id_new)), 0, 1)
         uid = int(j['rows'][0][0])
         x =  j['rows'][0][1]
         y =  j['rows'][0][2]
         z =  j['rows'][0][3]
-        print('%d,  %s, %d, %s, %s, %s, %d, %s'%(int(new_cluster_id),  snap_id_new,  uid, x,y,z,int(cluster_id),snaps[i]['redshift']))
+        if _snaps is not None and snaps[i]['name'] in _snaps:
+            print('%d,  %s,%s,  %d, %s'%(int(new_cluster_id),  snap_id_new,  ','.join(j['rows'][0]),int(cluster_id),snaps[i]['redshift']))
 
         #simulationid, snapid, simulation_name, snap_name, redshift, snaps =  get_sims_and_snaps(br, snap_id_new)
     log('done for this object')
 
+def cfloat(v,k):
+
+    if v=='None':
+        return float('nan')
+    else:
+        return float(v)
 def main():
     log ("")
     log ("===================================================")
     log ("=                                                 =")
     log ("= c2pap-web-portal batch jobs                     =")
-    log ("= By Antonio Ragagnin, 2018.                      =")
-    log ("= questions: ragagnin@lrz.de/ragagnin@usm.lmu.de  =")
+    log ("= By Antonio Ragagnin, 2018 - 2020.               =")
+    log ("= questions: antonio.ragagin@inaf.it              =")
     log ("=                                                 =")
     log ("===================================================")
     log ("")
@@ -490,6 +501,7 @@ def main():
 
     there is the special job 'match' that will find progenitors and descendant by looking ad previous and next snapshots:
     direction: 'parent'/'descendant'
+    snaps: array of snaps, e.g. 'snap_056,snap_092,snap_136' - if empty all snaps will be tracked
     """,  nargs='+', default=["IMG_Z_SIZE=200","r500factor=1.0"])
     parser.add_argument('-j', '--cache-jobs', help="Cache jobs values in file", default=None, type=str)# "jobs.cache", type=str)
     parser.add_argument('-n', '--naming', help="""
@@ -613,7 +625,7 @@ def main():
     clusters=[]
     with open(args.file, 'r') as f:
 
-        clusters = [{k: float(v) for k, v in row.items()}
+        clusters = [{k: cfloat(v,k) for k, v in row.items()}
              for row in csv.DictReader(f, skipinitialspace=True)] #no idea, I just found this code on stack overflow 
     log ("Read %d clusters."%(len(clusters)))
 
@@ -634,7 +646,7 @@ def main():
                 last_snap_id = snapid
                 
             if args.service=="match":
-                match(br, cluster, snaps, snapid, icluster_in_dataset)
+                match(br, cluster, snaps, snapid, icluster_in_dataset, args)
                 continue                    
             found_job = None
             cluster_id = cluster["uid"]
