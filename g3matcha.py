@@ -109,6 +109,7 @@ def memoize(func):
 # now functions with @memoize will cache results
 #
 
+
 @memoize
 def get_fof_file(filename, use_cache=False):
     return g3.GadgetFile(filename, is_snap=False)
@@ -125,13 +126,23 @@ def numpy_to_dict(data, blocks):
     """
     keys = list(data.keys())
     k0 = blocks[0]
-    return [dict([
-        (block, data[block][i]) for block in g3.iterate(blocks)
-    ]) for i in range(len(data[k0]))]
+    result = []
+    for i in range(len(data[k0])):
+        d = {}
+        for block in g3.iterate(blocks):
+                d[block] = data[block][i]
+        result.append(d)
+    return result
 
 @memoize
 def read_new_dict(filename, blocks, ptypes, use_cache = False, _filter = None):
-    return numpy_to_dict(read_new(filename, blocks, ptypes, use_cache = use_cache), blocks)
+        read_new_result = read_new(filename, blocks, ptypes, use_cache = use_cache)
+        
+        result =  numpy_to_dict(read_new_result, blocks)
+        keys =  [k for k in read_new_result.keys()]
+        for key in keys:
+                del read_new_result[key]
+        return result
 
 def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache = False):
     """
@@ -202,7 +213,7 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
                 
 
                 _partial_ids = ids_in_file[start_reading:end_reading]
-
+                del ids_in_file
 
                 
             if partial_ids is None:
@@ -221,7 +232,6 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
         goff_file += glen_file        
     return (partial_ids, ifile, goff_file)
 
-            
 def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_cache = False, blocks=None, with_ids=False):
     """
     returns all haloes (each in a dict) and their FoF data (GLEN, GPOS, RCRI, MCRI) 
@@ -249,25 +259,28 @@ def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_ca
         for icluster_file in range(nclusters_in_file):
 
             icluster = icluster+1
+            
             if icluster<ihalo_start:
                 continue
             if ihalo_end is not None and icluster>ihalo_end:
                 return
+            halo_info = dict(clusters_in_file[icluster_file])
             if with_ids:
-                goff = clusters_in_file[icluster_file]['GOFF']
-                glen = clusters_in_file[icluster_file]['GLEN']
+                goff = halo_info['GOFF']
+                glen = halo_info['GLEN']
                 halo_ids, ifile_ids_start, ifile_ids_goff =  get_halo_ids(groupbase, goff, glen, ifile_start = ifile_ids_start, goff_start = ifile_ids_goff, use_cache = use_cache)
-                clusters_in_file[icluster_file]['ids'] = halo_ids
+                halo_info['ids'] = halo_ids
                 
             
-            clusters_in_file[icluster_file]['ihalo'] = icluster
-            clusters_in_file[icluster_file]['ihalo_in_file'] = icluster_file
-            clusters_in_file[icluster_file]['ihalo_file'] = group_file
+            halo_info['ihalo'] = icluster
+            halo_info['ihalo_in_file'] = icluster_file
+            halo_info['ihalo_file'] = group_file
             #this prop  is not really related to the halo but I need it for periodic distance
-            clusters_in_file[icluster_file]['boxsize'] = boxsize1 
+            halo_info['boxsize'] = boxsize1 
             
-            yield clusters_in_file[icluster_file]
-
+            yield halo_info
+            del halo_info
+            
     
 def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, blocks=None, with_ids = False, halo_ids=None, halo_goff=0):
     """
@@ -285,13 +298,13 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
     found_first_subhalo = False
     isubhalo = -1
     ifile=-1
+
     for group_file in g3.yield_all_files(groupbase):
         ifile+=1
-        #print('ifile', ifile, ifile_ttart)
+
         if ifile_start!=None and ifile<ifile_start:
             continue
         data = read_new(group_file, blocks, 1, use_cache = use_cache)
-        #print(np.unique(data['GRNR']))
         if not np.any(data['GRNR']==ihalo):
             
             #this file dosent contain subhaloes of this halo
