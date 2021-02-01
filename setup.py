@@ -1,6 +1,21 @@
 from setuptools import setup
+from setuptools.command.build_py import build_py as build_py_orig
+
+excluded =  ['g3pp.py','g3maps.py']
+
+
+class build_py(build_py_orig):
+    def find_package_modules(self, package, package_dir):
+        modules = super().find_package_modules(package, package_dir)
+        return [
+            (pkg, mod, file)
+            for (pkg, mod, file) in modules
+            if not any(fnmatch.fnmatchcase(file, pat=pattern) for pattern in excluded)
+        ]
+
 
 setup(
+    cmdclass={'build_py': build_py}
     name='g3read',
     version='1.0',
     description='Read Gadget2/3 snapshots, large simulations and catalogues',
@@ -9,13 +24,6 @@ setup(
     author_email='antonio.ragagnin@inaf.it',
     license='GPLv3+',
     packages=['.'],
-    #package_dir={'g3read': '.'},
-    #data_files = [('prova', ['g3read.py','g3matcha.py'])], 
-    exclude_package_data={
-        '.': ['g3pp.py','g3maps.py'],
-       'g3read': ['g3pp.py','g3maps.py'],
-       '': ['g3pp.py','g3maps.py']
-    },
     zip_safe=False
 )
 
