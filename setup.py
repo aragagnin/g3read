@@ -2,7 +2,7 @@ import fnmatch
 from setuptools import setup
 from setuptools.command.build_py import build_py as build_py_orig
 
-excluded =  ['g3pp.py','g3maps.py','test_g3read_ids.py','test_g3read.py', 'setup.py','c2pap_batch.py','g3read_units']
+excluded =  ['g3pp.py','g3maps.py','test_g3read_ids.py','test_g3read.py', 'setup.py','c2pap_batch.py']
 
 class build_py(build_py_orig):
     def find_package_modules(self, package, package_dir):
