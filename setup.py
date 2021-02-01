@@ -10,7 +10,7 @@ setup(
     license='GPLv3+',
     #packages=['g3read'],
     #package_dir={'g3read': '.'},
-    data_files = [('', ['g3read.py','g3matcha.py'])], 
+    data_files = [('./', ['g3read.py','g3matcha.py'])], 
     zip_safe=False
 )
 
