@@ -1,3 +1,4 @@
+import fnmatch
 from setuptools import setup
 from setuptools.command.build_py import build_py as build_py_orig
 
