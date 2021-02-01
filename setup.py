@@ -8,9 +8,9 @@ setup(
     author='Antonio Ragagnin',
     author_email='antonio.ragagnin@inaf.it',
     license='GPLv3+',
-    #packages=['.'],
+    packages=['g3read','g3matcha'],
     #package_dir={'g3read': '.'},
-    data_files = [('prova', ['g3read.py','g3matcha.py'])], 
+    #data_files = [('prova', ['g3read.py','g3matcha.py'])], 
     zip_safe=False
 )
 
