@@ -35,7 +35,7 @@ However you can also install the package with the following command:
 python -mpip install  git+https://github.com/aragagnin/g3read
 ```
 
-and you will be able to `import g3read` and `import g3matcha` in your scripts without any further download.
+and you will be able to `import g3read`, `import g3matcha` or `import g3read_units` in your scripts without any further download.
 
 # Read Gadget and key files with g3read.py
 
