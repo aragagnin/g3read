@@ -15,7 +15,7 @@ class build_py(build_py_orig):
 
 
 setup(
-    cmdclass={'build_py': build_py}
+    cmdclass={'build_py': build_py},
     name='g3read',
     version='1.0',
     description='Read Gadget2/3 snapshots, large simulations and catalogues',
