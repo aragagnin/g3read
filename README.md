@@ -1,12 +1,14 @@
 
 This repository hosts a  collection of tools to read and post-process  large `Gadget2` and `Gadget3` files (including key files).
 The core routines (`g3read.py`) are a composition compbining some `pynbody` and a porting of some legacy _Klaus' IDL_ routines.
-to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollow">c2pap web portal</a> and to convert gadget files to HDF5. You do not need to download all those files: this is a collection of libraries, so read the documentation and just download what you need for your task.
+to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and to convert gadget files to HDF5
 
 **For questions**: Antonio Ragagnin <antonio.ragagnin@inaf.it> (https://aragagnin.github.io)
 
+
 **Table of Contents:**
 
+- [Install](#install)
 - [read Gadget and key files with g3read.py](#read-gadget-and-key-files-with-g3readpy)
   - [Read a single Gadget file](#read-a-single-gadget-file)
   - [Access the header](#access-the-header)
@@ -23,7 +25,19 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
 - [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
 - [Convert Gadget2 or 3 files to HDF5](#convert-gadget2-or-3-files-to-hdf5)
 
-# read Gadget and key files with g3read.py
+# Install
+
+The spirit of this collection of files is that you do not need to download all those files: you can read the documentation and just download the single files that you need for your tasks.
+
+However you can also install the package with the following command:
+
+```bash
+python -mpip install  git+https://github.com/aragagnin/g3read
+```
+
+and you will be able to `import g3read` and `import g3matcha` in your scripts without any further download.
+
+# Read Gadget and key files with g3read.py
 
 To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody). The library `g3read` will use [numba](http://numba.pydata.org) if available.
 
