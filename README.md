@@ -15,7 +15,7 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
   * [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
   * [Writing  back to a new file](#writing--back-to-a-new-file)
   * [Reading group_tab FoF output](#reading-group-tab-fof-output)
-- [Looping through haloes, their subhaloes and IDs with g3matcha.py](#looping-through-haloes--their-subhaloes-and-ids-with-g3matchapy)
+- [Looping through haloes, their subhaloes and IDs with g3matcha.py](#looping-through-haloes--their-subhaloes--and-ids--with-g3matchapy)
   * [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   * [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
   * [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
@@ -208,7 +208,7 @@ centers = old_fofs_format_data['GPOS']
 ```
 
 
-# Looping through haloes, their subhaloes and IDs with g3matcha.py
+# Looping through haloes, their subhaloes, and IDs with g3matcha.py
 
 `g3matcha.py` (which depends on `g3read`) provides high level functionality to perform for loop over haloes and their subhaloes.
 Check file `test_g3read_ids.py` for a complete example.
