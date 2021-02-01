@@ -7,25 +7,23 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
 
 **Table of Contents:**
 
-- [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
-  * [Read a single Gadget file](#read-a-single-gadget-file)
-  * [Access the header](#access-the-header)
-  * [Reading FOF/Subfind](#reading-fof-subfind)
-  * [Reading old-format group_tab fof](#)
-  * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
-  * [Writing  back to a (new) file](#writing--back-to-a-new-file)
-  * [Reading group_tab FoF output](#reading-group-tab-fof-output)
-- [g3matcha.py: Looping through haloes, their subhaloes and IDs](#g3matchapy--looping-through-haloes--their-subhaloes-and-ids)
-  * [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
-  * [Speeding-up SubFind/FoF  reading by caching data](#speeding-up-subfindfof--reading-by-caching-data)
-  * [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
-- [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
-- [g3maps.py: Maps of Large Simulations](#g3mapspy-maps-of-large-simulations)
-- [c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/](#c2pap-batchpy--batch-jobs-for-http-c2papcosmosimuclrzde-)
-- [Convert Gadget2/3 files to HDF5](#convert-gadget2-3-files-to-hdf5)
+- [read Gadget and key files with g3read.py](#read-gadget-and-key-files-with-g3readpy)
+  - [Read a single Gadget file](#read-a-single-gadget-file)
+  - [Access the header](#access-the-header)
+  - [Reading FOF or Subfind files](#reading-fof-or-subfind-files)
+  - [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
+  - [Writing  back to a new file](#writing--back-to-a-new-file)
+  - [Reading group_tab FoF output](#reading-group_tab-fof-output)
+- [Looping through haloes, their subhaloes, and IDs with g3matcha.py](#looping-through-haloes-their-subhaloes-and-ids-with-g3matchapy)
+  - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
+  - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
+  - [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
+- [Handling Gadgets Units of Measurement with g3read_units.py](#handling-gadgets-units-of-measurement-with-g3read_unitspy)
+- [Maps of Large Simulations with g3maps.py](#maps-of-large-simulations-with-g3mapspy)
+- [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
+- [Convert Gadget2 or 3 files to HDF5](#convert-gadget2-or-3-files-to-hdf5)
 
-
-# g3read.py: read Gadget and key files
+# read Gadget and key files with g3read.py
 
 To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody). The library `g3read` will use [numba](http://numba.pydata.org) if available.
 
@@ -104,7 +102,7 @@ h0 = f.header.HubbleParam
 all_other_properties_name = f.header.__dict__.keys()
 ```
 
-## Reading FOF/Subfind files
+## Reading FOF or Subfind files
 
 To read from the catalog you need to use `read_new` with the flag `is_snap=False`:
 
@@ -123,7 +121,7 @@ print('m200cs ', fof['MCRI'])
 check `test_g3read.py` for a sample that converts subfind haloes to ASCII table.
 
 
-## Reading from a large run (with super indexes)
+## Reading from a large run with super indexes
 
 The signature of `g3read.read_particles_in_box` is almost the same of `read_new`. As opposed to `read_new`, `g3read.read_particles_in_box` additionally needs a minimum radius.
 
@@ -172,7 +170,7 @@ group_gas_mask = group_gas_distance_from_center < r200c
 group_gas_masswtemp =  group_gas_data['TEMP'][group_gas_mask] * group_gas_data['MASS'][group_gas_mask]
 group_gas_avgtemp =  np.mean(group_gas_masswtemp)/np.sum( group_gas_data['MASS'][group_gas_mask])
 ```
-## Writing  back to a (new) file
+## Writing  back to a new file
 
 The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
 
@@ -207,7 +205,7 @@ centers = old_fofs_format_data['GPOS']
 ```
 
 
-# g3matcha.py: Looping through haloes, their subhaloes and IDs
+# Looping through haloes, their subhaloes, and IDs with g3matcha.py
 
 `g3matcha.py` (which depends on `g3read`) provides high level functionality to perform for loop over haloes and their subhaloes.
 Check file `test_g3read_ids.py` for a complete example.
@@ -262,7 +260,7 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end=10, blocks
         print('    sub halo IDs:', subhalo['ids'])
 ```
 
-## Speeding-up SubFind/FoF  reading by caching data
+## Caching of data to speedup SubFind or FoF reading
 
 `g3matcha` routines can be cached  to a dict in order to make reading  by adding `use_cache=True` to function calls.
 You can also cache results to file in order to recycle reads when running the same script multiple time (we all know you'll run your script many many times) by providing  provide a `g3matcha.cache_filename`.
@@ -298,7 +296,7 @@ in order to match haloes from snapshot A to snapshot B, run `./g3matcha.py` with
 ```
 
 
-# g3read_units.py: Handling Gadgets Units of Measurement
+#  Handling Gadgets Units of Measurement with g3read_units.py
 
 The library `g3read_units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`).
 
@@ -330,7 +328,7 @@ total_mass = np.sum(data["MASS"])
 print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
 ``` 
 
-# g3maps.py: Maps of Large Simulations
+#  Maps of Large Simulations with g3maps.py
 
 If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `g3maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
 
@@ -361,7 +359,7 @@ I am still not sure why `g3maps.py` do produce a more noisy output. It may be th
 
 
 
-# c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/
+#  batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py
 
 Given a list of clusters previously extracted from the c2pap web portal (the output file name is `dataset.csv`), the script `c2pap_batch.py` automatize the process of sending the same jobs parameter to all those haloes.
 
@@ -409,7 +407,7 @@ python c2pap_batch.py -f dataset.csv -s SMAC -p content="bolometric x-ray lumino
 To avoid running duplicate jobs, use the flags ` --existing-jobs --cache-jobs cachefile.pickle` to make the script check for existing jobs with identical parameters.
 
 
-# Convert Gadget2/3 files to HDF5
+# Convert Gadget2 or 3 files to HDF5
 
 Use the utility `gadget_to_hdf5.py`.
 
