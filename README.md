@@ -7,22 +7,23 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
 
 **Table of Contents:**
 
-- [g3read.py: read Gadget and key files](#g3readpy-read-gadget-and-key-files)
+- [g3read.py: read Gadget and key files](#g3readpy--read-gadget-and-key-files)
   * [Read a single Gadget file](#read-a-single-gadget-file)
   * [Access the header](#access-the-header)
-  * [Reading FOF/Subfind](#reading-fof-subfind)
-  * [Reading old-format group_tab fof](#)
-  * [Reading from a large run (with super indexes)](#reading-from-a-large-run-with-super-indexes)
-  * [Writing  back to a (new) file](#writing--back-to-a-new-file)
+  * [Reading FOF/Subfind files](#reading-fof-subfind-files)
+  * [Reading from a large run (with super indexes)](#reading-from-a-large-run--with-super-indexes-)
+  * [Writing  back to a (new) file](#writing--back-to-a--new--file)
   * [Reading group_tab FoF output](#reading-group-tab-fof-output)
 - [g3matcha.py: Looping through haloes, their subhaloes and IDs](#g3matchapy--looping-through-haloes--their-subhaloes-and-ids)
   * [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
-  * [Speeding-up SubFind/FoF  reading by caching data](#speeding-up-subfindfof--reading-by-caching-data)
+  * [Speeding-up SubFind/FoF  reading by caching data](#speeding-up-subfind-fof--reading-by-caching-data)
   * [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
-- [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy-handling-gadgets-units-of-measurement)
-- [g3maps.py: Maps of Large Simulations](#g3mapspy-maps-of-large-simulations)
-- [c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/](#c2pap-batchpy--batch-jobs-for-http-c2papcosmosimuclrzde-)
+- [g3read_units.py: Handling Gadgets Units of Measurement](#g3read-unitspy--handling-gadgets-units-of-measurement)
+- [g3maps.py: Maps of Large Simulations](#g3mapspy--maps-of-large-simulations)
+- [c2pap_batch.py: batch jobs for http://c2papcosmosim.uc.lrz.de/](#c2pap-batchpy--batch-jobs-for-http---c2papcosmosimuclrzde-)
 - [Convert Gadget2/3 files to HDF5](#convert-gadget2-3-files-to-hdf5)
+
+
 
 
 # g3read.py: read Gadget and key files
