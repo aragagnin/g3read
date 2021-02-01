@@ -7,24 +7,21 @@ to send batch jobs to the <a href="http://c2papcosmosim.uc.lrz.de/" rel="nofollo
 
 **Table of Contents:**
 
-
 - [read Gadget and key files with g3read.py](#read-gadget-and-key-files-with-g3readpy)
-  * [Read a single Gadget file](#read-a-single-gadget-file)
-  * [Access the header](#access-the-header)
-  * [Reading FOF or Subfind files](#reading-fof-or-subfind-files)
-  * [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
-  * [Writing  back to a new file](#writing--back-to-a-new-file)
-  * [Reading group_tab FoF output](#reading-group-tab-fof-output)
-- [Looping through haloes, their subhaloes and IDs with g3matcha.py](#looping-through-haloes--their-subhaloes--and-ids--with-g3matchapy)
-  * [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
-  * [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
-  * [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
-- [Handling Gadgets Units of Measurement with g3read_units.py](#handling-gadgets-units-of-measurement-with-g3read-unitspy)
+  - [Read a single Gadget file](#read-a-single-gadget-file)
+  - [Access the header](#access-the-header)
+  - [Reading FOF or Subfind files](#reading-fof-or-subfind-files)
+  - [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
+  - [Writing  back to a new file](#writing--back-to-a-new-file)
+  - [Reading group_tab FoF output](#reading-group_tab-fof-output)
+- [Looping through haloes, their subhaloes, and IDs with g3matcha.py](#looping-through-haloes-their-subhaloes-and-ids-with-g3matchapy)
+  - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
+  - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
+  - [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
+- [Handling Gadgets Units of Measurement with g3read_units.py](#handling-gadgets-units-of-measurement-with-g3read_unitspy)
 - [Maps of Large Simulations with g3maps.py](#maps-of-large-simulations-with-g3mapspy)
-- [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-http---c2papcosmosimuclrzde--with-c2pap-batchpy)
+- [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
 - [Convert Gadget2 or 3 files to HDF5](#convert-gadget2-or-3-files-to-hdf5)
-
-
 
 # read Gadget and key files with g3read.py
 
