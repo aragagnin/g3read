@@ -12,7 +12,9 @@ setup(
     #package_dir={'g3read': '.'},
     #data_files = [('prova', ['g3read.py','g3matcha.py'])], 
     exclude_package_data={
-        '.': ['g3pp.py','g3maps.py']
+        '.': ['g3pp.py','g3maps.py'],
+       'g3read': ['g3pp.py','g3maps.py'],
+       '': ['g3pp.py','g3maps.py']
     },
     zip_safe=False
 )
