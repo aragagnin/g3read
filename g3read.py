@@ -1397,7 +1397,12 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
         to=ce+d
 
         if(debug>1): print('# read 0.key file')
-        hkey=GadgetFile(snap_file_name+".0.key",is_snap=False)
+        if os.path.exists(snap_file_name+".0.key"):
+            hkey=GadgetFile(snap_file_name+".0.key",is_snap=False)
+        elif os.path.exists(snap_file_name+".key"):
+            hkey=GadgetFile(snap_file_name+".key",is_snap=False)
+        else:
+            raise IOError("0th key file found neither as '%' nor '%s'"%(snap_file_name+".0.key",snap_file_name+".key"))
         corner=hkey.header.mass[0:3]
         fac=hkey.header.mass[3]
         bits=hkey.header.flag_feedback
