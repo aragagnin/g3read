@@ -1428,7 +1428,10 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
             ifiles = find_files_for_keys(snap_file_name,keylist,debug=debug, limit_to=limit_to)
             if(debug>1): print('# files', len(ifiles))
             for index in ifiles:
-                file_name = snap_file_name+"."+str(index)
+                if not snap_path_type["multiple_files"]:
+                    file_name = snap_file_name
+                else:
+                    file_name = snap_file_name+"."+str(index)
                 if(debug>1): print('# g3.yield_particles_file_in_box yields', file_name)
                 yield [file_name, keylist]
         else:
