@@ -281,6 +281,10 @@ def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_ca
             yield halo_info
             del halo_info
             
+@memoize
+def get_all_files(groupbase, use_cache=False):
+    return list(g3.yield_all_files(groupbase))
+
     
 def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, blocks=None, with_ids = False, halo_ids=None, halo_goff=0):
     """
@@ -291,7 +295,6 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
     ifile1 = -1
     if blocks is None:
         blocks = ('SMST','SPOS','SOFF')
-    if 'GRNR' not in blocks:   blocks = blocks+('GRNR',)
     if 'SOFF' not in blocks:   blocks = blocks+('SOFF',)
     if 'SLEN' not in blocks:   blocks = blocks+('SLEN',)
 
@@ -299,13 +302,18 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
     isubhalo = -1
     ifile=-1
 
-    for group_file in g3.yield_all_files(groupbase):
+    for group_file in  get_all_files(groupbase, use_cache=use_cache):
         ifile+=1
 
         if ifile_start!=None and ifile<ifile_start:
             continue
+        grnr = read_new(group_file, 'GRNR', 1, use_cache = use_cache)
+        #minimum halo associated to subhaloes in this file is greater than what we seek
+        if np.min(grnr)>ihalo:
+            return
         data = read_new(group_file, blocks, 1, use_cache = use_cache)
-        if not np.any(data['GRNR']==ihalo):
+        
+        if not np.any(grnr==ihalo):
             
             #this file dosent contain subhaloes of this halo
             if found_first_subhalo: 
@@ -317,11 +325,11 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
         found_first_subhalo = True
         subhaloes_in_file = numpy_to_dict(data, blocks)
         #print('loppi')
-        for subhalo in subhaloes_in_file:
-            if (subhalo['GRNR']!=ihalo):
+        for isubhalo_in_file, subhalo in enumerate(subhaloes_in_file):
+            if (grnr[isubhalo_in_file]!=ihalo):
                 continue
             isubhalo+=1
-
+            subhalo['GRNR'] = grnr[ihalo]
             subhalo['ihalo'] = ihalo
             subhalo['ifile'] = ifile
             subhalo['isubhalo'] = isubhalo
