@@ -216,10 +216,10 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
                 del ids_in_file
 
                 
-            if partial_ids is None:
-                partial_ids = _partial_ids
-            else:
-                partial_ids = np.concatenate((partial_ids, _partial_ids))
+                if partial_ids is None:
+                    partial_ids = _partial_ids
+                else:
+                    partial_ids = np.concatenate((partial_ids, _partial_ids))
             if debug>0:
                 print('# get_halo_ids: partial_ids.shape = ',partial_ids.shape)    
 
