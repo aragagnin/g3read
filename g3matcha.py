@@ -14,7 +14,7 @@ import numpy as np, yaml, json, sys
 from collections import OrderedDict
 
 import os
-
+import copy
 
 import pickle; #_pickle as cPickle
 
@@ -91,7 +91,7 @@ def memoize(func):
             funcname = func.__name__ if cache_from_filename_only else str(func)
             k = str((funcname, tuple(args), tuple(dict_to_pairs(kw))))
             if k in cache.keys():
-                return cache[k]
+                return copy.deepcopy(cache[k])
             if debug:
                 print('->',k)
             result = func(*args, **kw)
