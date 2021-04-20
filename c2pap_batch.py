@@ -38,7 +38,7 @@ import sys
 
 
 BASE = "https://c2papcosmosim.uc.lrz.de" 
-__version__= "1.0 [22 november 2018]"
+__version__= "1.0 [21 april 2021]"
 __author__= "Antonio Ragagnin"
 globy = {}
 
@@ -75,7 +75,7 @@ def get_between_tags(res, tag, flags=None):
 
 def get_jobs_ids(br):
     "open the url with the job lists and parse the HTML to find all job ids"
-    res = dec(br.open(BASE+"/jobs"))
+    res = dec(br.open(BASE+"/jobs/"))
     #the job ids are inside a <code></code> HTML tag
     jobids = get_between_tags(res, 'code')
     no_error_jobids = []
@@ -146,7 +146,7 @@ def download(br, naming, jobid, job, cluster):
 
 def wait(br, jobid):
     "given a `jobid`, this function check the list of jobs until `jobid` results as 'COMPLETED' "
-    res = dec(br.open(BASE+"/jobs"))
+    res = dec(br.open(BASE+"/jobs/"))
     status=None
     while status!="COMPLETED":
         row = find_between(res, '<code>%s</code>'%(jobid), '</tr>')
@@ -155,7 +155,7 @@ def wait(br, jobid):
         if status!="COMPLETED":
             log("now waiting %ds..."%(globy["time_sleep"]))
             time.sleep(globy["time_sleep"])
-            res = dec(br.open(BASE+"/jobs"))
+            res = dec(br.open(BASE+"/jobs/"))
 
     return jobid
 
