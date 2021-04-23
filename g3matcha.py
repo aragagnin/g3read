@@ -185,7 +185,7 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
         if True:
             if (goff+glen<=goff_file):
                 if debug>0:
-                    print( '# get_halo_ids:   (goff+glen<=goff_file) => we read all IDs')
+                    print( '# get_halo_ids:   (goff+glen<=goff_file) => we have read all IDs')
                 finish = True
             elif goff>(goff_file+glen_file): 
                 if debug>0:
@@ -199,7 +199,8 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
                             print( '# get_halo_ids: IDs started in the prev file, I pick IDs from the begginning of the file')
                     start_reading = 0
                 
-                end_reading = start_reading+glen
+                #end_reading = start_reading+glen
+                end_reading = goff - goff_file + glen # CRF 21/04/2021
                 if end_reading>glen_file:
                     if debug>0:
                             print( '# get_halo_ids: IDs will finish in the next file(s): I read up to end of file')
