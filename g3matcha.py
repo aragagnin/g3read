@@ -352,7 +352,7 @@ def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, 
     ids1 = None #cache ids list of this halo
     icluster2 = -1
 
-    for cluster2 in yield_haloes(groupbase2, 0, min_value=min_value, min_block_value=min_block_value use_cache = use_cache):
+    for cluster2 in yield_haloes(groupbase2, 0, min_value=min_value, min_block_value=min_block_value, use_cache = use_cache):
         glen2  = cluster2['GLEN']
         gpos2  = cluster2['GPOS']
         r200c2  = cluster2['RCRI']
