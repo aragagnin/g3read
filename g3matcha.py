@@ -233,10 +233,13 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
         goff_file += glen_file        
     return (partial_ids, ifile, goff_file)
 
-def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_cache = False, blocks=None, with_ids=False):
+def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_value=None, min_block_value =None, use_cache = False, blocks=None, with_ids=False):
     """
     returns all haloes (each in a dict) and their FoF data (GLEN, GPOS, RCRI, MCRI) 
-    given the path of catalog groupbase
+    given the path of catalog groupbase.
+    
+    You can set when to stop the research by givin the minimum value of a given block. 
+    E.g. min_value=10000, min_block_value='GLEN' will stop after finding a halo with less than min_value GLEN.
     """
     icluster = -1
     ifile1 = -1
@@ -246,6 +249,7 @@ def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_ca
     if 'MCRI' not in blocks:  blocks = blocks+('MCRI',)
     if 'GOFF' not in blocks:  blocks = blocks+('GOFF',)
     if 'GLEN' not in blocks:  blocks = blocks+('GLEN',)
+    if min_block_value is not None and min_block_value not in blocks:  blocks = blocks+(min_block_value,)
     if with_ids:
         ifile_ids_start = 0
         ifile_ids_goff = 0
@@ -255,7 +259,7 @@ def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_mcri=None, use_ca
         nclusters_in_file = s.header.npart[0]
         clusters_in_file = read_new_dict(group_file,  blocks, 0, use_cache = use_cache)
         boxsize1 = s.header.BoxSize
-        if min_mcri is not None  and   (clusters_in_file[0]['MCRI'] < min_mcri):
+        if min_value is not None  and   (clusters_in_file[0][min_block_value] < min_value):
             return
         for icluster_file in range(nclusters_in_file):
 
@@ -339,7 +343,7 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
             yield subhalo
 
 
-def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, ids_block2, min_mcri, min_ids_len_factor, max_distance, max_r200c_factor_ids, use_cache = False):
+def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, ids_block2, min_value, min_ids_len_factor, max_distance, max_r200c_factor_ids, min_block_value='MCRI', use_cache = False):
     """
     loop over haloes and find matches with the halo on gpos1 and radius r200c1 in simulation snapbase1.
     In simulation1 read block ids_block1, in simulation2 read block ids_block2 - bc DMO runs  have blocks shifted wrt the BAO counterpart.
@@ -348,7 +352,7 @@ def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, 
     ids1 = None #cache ids list of this halo
     icluster2 = -1
 
-    for cluster2 in yield_haloes(groupbase2, 0, min_mcri=min_mcri, use_cache = use_cache):
+    for cluster2 in yield_haloes(groupbase2, 0, min_value=min_value, min_block_value=min_block_value use_cache = use_cache):
         glen2  = cluster2['GLEN']
         gpos2  = cluster2['GPOS']
         r200c2  = cluster2['RCRI']
