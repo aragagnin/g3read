@@ -355,7 +355,6 @@ def yield_matches(snapbase1, gpos1, r200c1, groupbase2, snapbase2,  ids_block1, 
         m200c2  = cluster2['MCRI']
         boxsize1  = cluster2['boxsize']
 
-        print(gpos1, gpos2, boxsize1)
         distance = g3.periodic_distance(gpos1, gpos2, periodic=boxsize1)
         cluster2['distance'] = distance
         cluster2['int_frac'] = np.nan
