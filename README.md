@@ -50,7 +50,7 @@ read_new(filename, blocks, ptypes, center=None, is_snap=True, join_ptypes=False)
 ```
 
 - `filename`: path of the gadget file
-- `blocks`: block(s) to read. Can be a string or a list of one or more strings (e.g. `"MASS"`, `["MASS"]`, or `["MASS", "POS "]`). Blocks must be 4characters long. Use `"ID  "` to read IDs.
+- `blocks`: block(s) to read. Can be a string or a list of one or more strings (e.g. `"MASS"`, `["MASS"]`, or `["MASS", "POS "]`). Blocks must be 4characters long. E.g. use `"ID   "` to read IDs.
 - `ptypes`: can be an integer  or a list of integers representing the particle type (e.g. `1`, `[1]`, or `[0,1,2,3,4,5]`). Using `-1` equals to asking for all blocks.
 `center`: if set turns on the periodic (PBC) assumpions. 
 - `is_snap`: default is `True`. Set to `False` in order to read SUBFIND data
