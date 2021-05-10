@@ -195,7 +195,10 @@ def submit(br, cluster_id, args):
     for k in args.ps.keys():
         if k=='redshift': continue
         v=args.ps[k]
-        if v.is_option_number:
+        #deal with generic PHOX instrument
+        if k=='instrument' and v=='generic' or v=='-1': 
+            fill(br, k, str('-1'), debug=True, byval=True)
+        elif v.is_option_number:
             fill(br, k, str(v), debug=True, byval=True)
         else:
             fill(br, k, str(v), debug=True, byval=False)
@@ -487,7 +490,8 @@ def main():
 
     PHOX:
     mode ['ICM only','AGN only','ICM+AGN'] 
-    instrument (-1 for generic) or 'eROSITA (A=1000 FoV=60)' ..
+    instrument use -1 or 'generic' for generic) 
+               or use any of the PHOX dropdown menu values as  'eROSITA (A=1000 FoV=60)' ..
     instrument_a (only if generic)
     instrument_fov (only if generic)
     t_obs_input e.g. 1000
