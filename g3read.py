@@ -526,7 +526,7 @@ class GadgetFile(object):
                 # that blocks are either fully present or not for a
                 # given particle. It also has to try all
                 # possibilities of dimensions of array and data type.
-                for dim, tp in (1, np.float32), (1, np.float64), (3, np.float32), (3, np.float64), (11, np.float32), (12, np.float32):
+                for dim, tp in (1, np.float32), (1, np.float64), (3, np.float32), (3, np.float64), (11, np.float32), (12, np.float32), (15, np.float32):
                     try:
                         block.data_type = tp
                         block.partlen = np.dtype(tp).itemsize * dim
