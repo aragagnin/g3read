@@ -945,7 +945,7 @@ class GadgetFile(object):
             # Relative location of next block; the extra 2 uints are for storing the headers.
             # Write format 2 header header
             head = struct.pack(
-                self.endian + 'I4sII', blkheadsize, name, nextblock, blkheadsize)
+                self.endian + 'I4sII', blkheadsize, _to_raw(name), nextblock, blkheadsize)
         # Also write the record size, which we want for all files*/
         head += self.write_block_footer(name, blocksize)
         return head
