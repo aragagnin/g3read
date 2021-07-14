@@ -10,7 +10,7 @@ try:
 except:
         import g3read as g3
         
-import numpy as np, yaml, json, sys
+import numpy as np,  sys
 from collections import OrderedDict
 
 import os
