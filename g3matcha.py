@@ -178,14 +178,14 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
             continue
         if debug>0:
             print('# get_halo_ids: read file ',group_file)
-        ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
-        glen_file = len(ids_in_file)
+        file_header = get_fof_file(group_file,  use_cache = use_cache)
+        glen_file = file_header.header.npart[2] #len(ids_in_file)
         if debug>0:
             print( '# get_halo_ids:' ,group_file, 'halo goff',goff, 'halo glen',glen, 'file cumulative goff', goff_file,' file glen',glen_file)
         if True:
             if (goff+glen<=goff_file):
                 if debug>0:
-                    print( '# get_halo_ids:   (goff+glen<=goff_file) => we have read all IDs')
+                    print( '# get_halo_ids:   (goff+glen<=goff_file) => we read all IDs')
                 finish = True
             elif goff>(goff_file+glen_file): 
                 if debug>0:
@@ -212,7 +212,7 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
                 if debug>0:
                         print( '# get_halo_ids: I read in the following range, ', start_reading, end_reading)
                 
-
+                ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
                 _partial_ids = ids_in_file[start_reading:end_reading]
                 del ids_in_file
 
