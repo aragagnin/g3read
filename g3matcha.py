@@ -69,7 +69,7 @@ cache_filename = None
 cache = None
 size_limit = 2000
 cache_type = 'pickle'
-
+recache = None
 def memoize(func):
     global cache, size_limit
     """
@@ -80,8 +80,9 @@ def memoize(func):
         if 'use_cache' not in kw or kw['use_cache']==False:
                 return func(*args, **kw)
         else:
-            if cache is None:
+            if cache is None or recache==True:
                 cache = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
+                recache = None
                 if cache_filename is not None:
                         if debug:
                                 print('# prima di restore ', cache.keys())
