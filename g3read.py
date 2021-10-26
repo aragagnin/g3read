@@ -514,6 +514,7 @@ class GadgetFile(object):
             else:
                 fd.seek(block.length, 1)
             record_size = self.read_block_foot(fd)
+
             if record_size != block.length:
                 raise IOError("Corrupt record in " +
                               filename + " footer for block " + name + "dtype" + str(block.data_type))
@@ -740,7 +741,9 @@ class GadgetFile(object):
         """Write a full block of data in this file. Any particle type can be written. If the particle type is not present in this file,
         an exception KeyError is thrown. If there are too many particles, ValueError is thrown.
         big_data contains a reference to the data to be written. Type -1 is all types"""
+        name =  _to_raw(name) #convert string to binary data
         try:
+            
             cur_block = self.blocks[name]
         except KeyError:
             raise KeyError("Block " + name + " not in file " + self._filename)
@@ -757,6 +760,7 @@ class GadgetFile(object):
         dt = np.dtype(cur_block.data_type)
         bt = big_data.dtype
         if bt.kind != dt.kind:
+
             raise ValueError("Data of incorrect type passed to write_block")
         # Open the file
         if filename == None:
@@ -764,12 +768,14 @@ class GadgetFile(object):
         else:
             fd = open(filename, "r+b")
         # Seek to the start of the block
+
         fd.seek(cur_block.start + cur_block.partlen * p_start, 0)
         # Add the block header if we are at the start of a block
         if ptype == MinType or ptype < 0:
             data = self.write_block_header(name, cur_block.length)
             # Better seek back a bit first.
             fd.seek(-len(data), 1)
+
             fd.write(data)
 
         if self.endian != '=':
@@ -779,8 +785,10 @@ class GadgetFile(object):
         # Make sure to ravel it, otherwise the wrong amount will be written,
         # because it will also write nulls every time the first array dimension
         # changes.
-        d = np.ravel(big_data.astype(dt)).tostring()
+        d = np.ravel(big_data.astype(dt)).tobytes() #string()
+
         fd.write(d)
+
         if ptype == MaxType or ptype < 0:
             data = self.write_block_footer(name, cur_block.length)
             fd.write(data)
@@ -919,14 +927,19 @@ class GadgetFile(object):
         def st(val):
             return val.start
         # Get last block
-        lb = max(self.blocks.values(), key=st)
-
+        if len(self.blocks)==0:
+            lb = None
+            lb_start = 0
+            lb_length = 256+20
+        else:
+            lb = max(self.blocks.values(), key=st)
+            lb_start = lb.start
+            lb_length = lb.length
         if np.issubdtype(dtype, float):
             dtype = np.float32  # coerce to single precision
-
         # Make new block
         block = GadgetBlock(length=blocksize, partlen=partlen, dtype=dtype)
-        block.start = lb.start + lb.length + 6 * \
+        block.start = lb_start + lb_length + 6 * \
             4  # For the block header, and footer of the previous block
         if ptypes == -1:
             block.ptypes = np.ones(N_TYPE, bool)
