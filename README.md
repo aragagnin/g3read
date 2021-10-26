@@ -3,7 +3,7 @@ This repository hosts a  collection of tools to read and post-process  large `Ga
 The core routines (`g3read.py`) are a composition compbining some `pynbody` and a porting of some legacy _Klaus' IDL_ routines.
 to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and to convert gadget files to HDF5
 
-**For questions**: Antonio Ragagnin <antonio.ragagnin@inaf.it> (https://aragagnin.github.io)
+**For questions**: Antonio Ragagnin <antonio.ragagnin@unibo.it> (https://aragagnin.github.io)
 
 
 **Table of Contents:**
