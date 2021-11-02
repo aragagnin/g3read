@@ -237,15 +237,15 @@ with open(filename, 'a') as f: #create file if doesn't exists
 
 # generate header
 header = g3.GadgetHeader(npart, mass_table, time, redshift, BoxSize, Omega0, OmegaLambda, HubbleParam, num_files=num_files)
-
+# write header to file
 f = g3.GadgetWriteFile(filename, npart, {}, header) #write header file
 f.write_header(f.header)
 
-
+#allocate blocks data
 f.add_file_block('POS ', 30*4*3  , partlen=4*3) #add a block of 30*4*3 bytes each of 4*3 bytes
 f.add_file_block('MASS', 10*4, partlen=4) #add a block of 10*4*3 bytes each of 4 bytes
 
-print('write blocks..')
+#write blocks data to disk
 f.write_block( 'POS ', -1, np.array([[1,2,3]]*30, dtype=np.float32)) #write 30 positions
 f.write_block( 'MASS', -1, np.array([1,2,3,4,5,6,7,7,7,7], dtype=np.float32)) #write 10 masses
 ```
