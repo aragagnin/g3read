@@ -15,6 +15,7 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
   - [Reading FOF or Subfind files](#reading-fof-or-subfind-files)
   - [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
   - [Writing  back to a new file](#writing--back-to-a-new-file)
+  - [Writing a new snapshot file from scratch](#writing-a-new-snapshot-file-from-scratch)
   - [Reading group_tab FoF output](#reading-group_tab-fof-output)
 - [Looping through haloes, their subhaloes, and IDs with g3matcha.py](#looping-through-haloes-their-subhaloes-and-ids-with-g3matchapy)
   - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
@@ -184,6 +185,7 @@ group_gas_mask = group_gas_distance_from_center < r200c
 group_gas_masswtemp =  group_gas_data['TEMP'][group_gas_mask] * group_gas_data['MASS'][group_gas_mask]
 group_gas_avgtemp =  np.mean(group_gas_masswtemp)/np.sum( group_gas_data['MASS'][group_gas_mask])
 ```
+
 ## Writing  back to a new file
 
 The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
@@ -203,6 +205,49 @@ masses = f.read_new("MASS",-1)
 potential = pp.gravitational_potential(masses, positions, center).potential
 
 f.write_block("POT ", -1, potential, filename=my_filename_output)
+```
+
+## Writing a new snapshot file from scratch
+
+Here an example on how to create a Gadget snapshot and its header from scratch
+
+```python
+
+import g3read as g3, numpy as np
+
+### START INPUT DATA ###
+
+filename = 'mysnap'
+
+npart = np.array([10,20,0,0,0,0])
+mass_table  =  [0.]*6
+mass_table[1] = 0.1 #ptype1 has fixed mass == 0.1
+redshift = 1.0
+time = 1./(redshift+1.)
+BoxSize=100.
+Omega0 = 0.27
+OmegaLambda = 1. - Omega0
+HubbleParam = .704 #or should I put 70.4? I do not remember
+num_files = 1
+
+### END INPUT DATA ###
+
+with open(filename, 'a') as f: #create file if doesn't exists
+    pass
+
+# generate header
+header = g3.GadgetHeader(npart, mass_table, time, redshift, BoxSize, Omega0, OmegaLambda, HubbleParam, num_files=num_files)
+
+f = g3.GadgetWriteFile(filename, npart, {}, header) #write header file
+f.write_header(f.header)
+
+
+f.add_file_block('POS ', 30*4*3  , partlen=4*3) #add a block of 30*4*3 bytes each of 4*3 bytes
+f.add_file_block('MASS', 10*4, partlen=4) #add a block of 10*4*3 bytes each of 4 bytes
+
+print('write blocks..')
+f.write_block( 'POS ', -1, np.array([[1,2,3]]*30, dtype=np.float32)) #write 30 positions
+f.write_block( 'MASS', -1, np.array([1,2,3,4,5,6,7,7,7,7], dtype=np.float32)) #write 10 masses
 ```
 
 ## Reading group_tab FoF output
