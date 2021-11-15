@@ -122,71 +122,66 @@ def periodic_axis(x,   periodic=None, center_c=None):
     return dx+center_c
 
 
-def join_res(res, blocks,  join_ptypes, only_joined_ptypes, f=None):
-    """
-    join the read_new results of various blocks in a single block of ptype = -1.
+def flatten(res, blocks, ptypes):
+        
 
-    note: read_new returns an dictionary of all selected ptypes, and
-    each element has a dictionary for each selected block, and each element has 
-    the numpy array readed from file. 
+    add_ptype_block(res)
+    if (iterable(blocks)):
+        blocks+=['PTYPE']
+    concatenate_minus1(res, blocks, ptypes)
+    res3 =  flatten_if_possible(res, ptypes, blocks)
+    return res3
 
-    For instance to access gas position: read_new(["POS "],[0,1])[0]["POS "]
-    To access all positions: join_res( read_new(["POS "],[0,1])) [-1]["POS "]
-
-    """
-
-    if not join_ptypes:
-        only_joined_ptypes=False
-    ptypes = [i for i in res if i!=-1]
-    non_empty_blocks = []
-    #if requested, add block -1
-    if join_ptypes:
-        res_minus_one = {}
+def concatenate_minus1(data, blocks, ptypes):
+    if -1 in data:
+        return
+    data[-1]={}
+    if ptypes==-1:
         for block in iterate(blocks):
-            #t contiene il concatenato dei ptypes
-            t=None
-            for i in res: #loop on ptypes
-                if block not in res[i]:
-                    continue
-                #print(i)
-                my_data = None
-                if   len (res[i][block])>0:
-                    my_data = res[i][block]
-                elif f is not None:
-                    #we do nan data of blocks that dont have the property,
-                    #but you must pass me f
-                    cols, dtype = f.get_data_shape(block,i)
-                    shape = f.header.npart[i]
-                    if cols>1:
-                        shape = (f.header.npart[i],cols)
-                    my_data = np.full(shape,np.nan, dtype=dtype)
+            rese = [data[ptype][block] for ptype in [0,1,2,3,4,5] if ptype in data and data[ptype][block] is not None]
+            if len(rese)>0:
+                data[-1][block] = np.concatenate(rese)
+            else:
+                data[-1][block] = None
+    
 
-                if my_data is not None:
-                    non_empty_blocks.append(block)
-
-                    if t is None:
-                        t=my_data
-                    else:
-                        t = np.concatenate((t, my_data))
-            #print('t', t)
-            res_minus_one[block] = t
-        if(len(non_empty_blocks)>0):
-            res_minus_one['PTYPE']=np.concatenate(tuple(
-                [np.zeros(len(res[i][ list(res[i].keys())[0]   ]),dtype=np.int32)+i  for i in res if i!=-1 and len(res[i].keys())>0  ]
-            ))
-        #if requested, we return only -1 block
-        res[-1] = res_minus_one
-    #print(res, only_joined_ptypes, iterable(ptypes),iterable(blocks))
-    if only_joined_ptypes: 
-        if iterable(blocks):
-            res = res[-1]
-        else:
-            res = res[-1][blocks]
+def flatten_if_possible(data, *l,idx=0):
+    if idx>=len(l):
+        return data #if len(data)>0 else None
+    if iterable(l[idx]):
+        return {k:flatten_if_possible(v, *l, idx=idx+1) for k,v in data.items()}
     else:
-        if not iterable(ptypes):
-            res = res[ptypes]
-        if not iterable(blocks):
-            res = res[blocks]
+        if isinstance(data, dict):
+            return flatten_if_possible(data[l[idx]], *l, idx=idx+1)
+        else:
+            return flatten_if_possible(data, *l, idx=idx+1)
+
+def add_ptype_block(data):
+    for ptype in data.keys():
+        blocks = list(data[ptype].keys())
+        if len(blocks)>0:
+            one_block = data[ptype][blocks[0]]
+            if one_block is not None:
+                data[ptype]['PTYPE'] = np.full(len(one_block), ptype)
+            else:
+                data[ptype]['PTYPE'] = None
+def join_list_of_results(datas):
+    res = {}
+    keys = set()
+    for data in datas:
+        for ptype in data.keys():
+            if ptype not in res:
+                res[ptype] = {}
+            for block in data[ptype]:
+                if block not in res[ptype]:
+                    res[ptype][block] = None
+                if data[ptype][block] is None or len(data[ptype][block])==0:
+                    continue
+                if block not in res[ptype] or res[ptype][block] is None:
+                    res[ptype][block] = data[ptype][block]
+                else:
+                    res[ptype][block] = np.concatenate((res[ptype][block], data[ptype][block]))
+
     return res
 
 def to_spherical(xyzt,center):
@@ -430,9 +425,7 @@ class GadgetHeader(object):
 class GadgetFile(object):
 
     def __init__(self, filename,is_snap=True):
-        #print('#patched __init__',filename)
-        #if(debug>0):
-        #    printf("g3.read: opening '%s'\n"%(filename), e=True)
+
         self._filename = filename
         self.blocks = {}
         self.info = None
@@ -514,7 +507,6 @@ class GadgetFile(object):
             else:
                 fd.seek(block.length, 1)
             record_size = self.read_block_foot(fd)
-
             if record_size != block.length:
                 raise IOError("Corrupt record in " +
                               filename + " footer for block " + name + "dtype" + str(block.data_type))
@@ -795,30 +787,23 @@ class GadgetFile(object):
 
         fd.close()
     
-    def read_new(self, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=_periodic, center=None, do_join=True):
-
-        if iterable(blocks): _blocks=blocks
-        else: _blocks = [blocks]
-
-        if iterable(ptypes):
-            _ptypes=ptypes
-        else: 
-            if ptypes==-1:
-                only_joined_ptypes=True
-                _ptypes=[0,1,2,3,4,5]
-            else:
-                _ptypes = [ptypes]
+    def read_new(self, blocks, ptypes, periodic=_periodic, center=None, do_flatten=True):
 
         res={}
-        for block in _blocks:
+        _ptypes = ptypes
+        if  ptypes==-1 or (iterable(ptypes) and len(ptypes)==1 and ptypes[0]==-1):
+            _ptypes=[0,1,2,3,4,5]
+        for ptype in iterate(_ptypes):
+            res[ptype] = {}
+            for block in iterate(blocks):
+                res[ptype][block] = self.read(block, ptype, center=center)
+        if do_flatten:
+            
+            add_ptype_block(res)
 
-            for ptype in _ptypes:
-                if ptype not in res:
-                    res[ptype]={}
-                f_data = self.read(block, ptype, center=center)
-                res[ptype][block] = f_data
-        if do_join:
-            return  join_res(res, blocks, join_ptypes, only_joined_ptypes, f=self)
+            concatenate_minus1(res, blocks, ptypes)
+            res3 =  flatten_if_possible(res, ptypes, blocks)
+            return res3
         else:
             return res
 
@@ -1228,7 +1213,7 @@ def find_files_for_keys(myname,keylist, debug=0, limit_to=None):
     return ifiles
 
 
-def read_particles_given_key_for_single_file(mmyname,blocks,keylist, ptypes,periodic=True,center=None, join_ptypes=True, only_joined_ptypes=True, debug=0):
+def read_particles_given_key_for_single_file(mmyname,blocks,keylist, ptypes,periodic=True,center=None, only_joined_ptypes=True, debug=0, use_super_indexes = None):
     """ 
     this function is a clone of Klaus IDL peano hilbert key function. 
     give me  a filename, list of peano key (keylist) and it returns the  data blocks and ptypes.
@@ -1372,7 +1357,7 @@ def get_one_file(snap_file_name):
         return snap_file_name+'.0'
  
 
-def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None, part_keylist = None):
+def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None, part_keylist = None, use_super_indexes= None):
     """
     from the snap path it returns a iterable list of files path that contains all particles centered in `center` and with distance `d`.
     
@@ -1390,7 +1375,7 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
     snap_path_type = get_snap_path_type(snap_file_name)
     if(debug>1): print('# ',snap_path_type)
     
-    if not snap_path_type["has_super_index"]:
+    if not snap_path_type["has_super_index"] or use_super_indexes == False:
         if not snap_path_type["multiple_files"]:
             yield [snap_file_name, None]
             return
@@ -1438,7 +1423,7 @@ def yield_particles_file_in_box(snap_file_name,center,d, debug=0, limit_to=None,
             if(debug>1): print('# keylists: ', len(keylist),' from ', np.min(keylist),' to ',np.max(keylist))
             if(debug>1): print('# wait for files given keylist')
             
-            ifiles = find_files_for_keys(snap_file_name,keylist,debug=debug, limit_to=limit_to)
+            ifiles = find_files_for_keys(snap_file_name, np.array(keylist),debug=debug, limit_to=limit_to)
             if(debug>1): print('# files', len(ifiles))
             for index in ifiles:
                 if not snap_path_type["multiple_files"]:
@@ -1475,7 +1460,7 @@ def yield_all_files(snap_file_name):
         else:
             return
 
-def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=False, debug=0, part_keylist =None):
+def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=False, debug=0, part_keylist =None,  use_super_indexes = None):
     """
     given a list of files, yield the numpy data array.
     this function is very useful if you have low memory and must process a block/file per time.
@@ -1485,10 +1470,9 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
     _periodic = None
     if debug>1: print('# g3.yield_particles_blocks_in_box')
 
-    for file_name, keylist in yield_particles_file_in_box(snap_file_name, center, d, part_keylist = part_keylist):
-
+    for file_name, keylist in yield_particles_file_in_box(snap_file_name, center, d, part_keylist = part_keylist, use_super_indexes = use_super_indexes):
         if debug>1: print('# I got ', file_name)
-        if keylist is None or snap_path_type["has_keys"] == False:
+        if keylist is None or snap_path_type["has_keys"] == False or use_super_indexes==False:
             if(debug>1):
                 print('# read',file_name)
             f=GadgetFile(file_name)
@@ -1505,7 +1489,8 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
             for ptype in iterate(ptypes):
                 if ptype not in res:
                     res[ptype]={}
-                x_pos = f.read_new(['POS '], [ptype], do_join=False, center=center if _periodic else None, periodic=_periodic)[ptype]['POS ']
+                x_pos = f.read_new(['POS '], [ptype], do_flatten=False, center=center if _periodic else None, periodic=_periodic)[ptype]['POS ']
+                
                 #perform cut of read_particles_in_box without superindexes
                 x_distance = to_spherical(x_pos, center).T[0]
                 x_mask = x_distance<d
@@ -1513,52 +1498,36 @@ def yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes,  peri
                     if block=='POS ':
                         _x = x_pos
                     else:
-                        _x = f.read_new(iterate(block), iterate(ptype), do_join=False, center=center if _periodic else None, periodic=_periodic)[ptype][block]
+                        
+                        _x = f.read_new(iterate(block), iterate(ptype), do_flatten=False, center=center if _periodic else None, periodic=_periodic)[ptype][block]
                     res[ptype][block]=_x[x_mask]
             if debug>2:
                 print('#res ', res)
             yield res
         else:
-            res =  read_particles_given_key_for_single_file(file_name, blocks, keylist, ptypes, periodic=periodic,center=ce, debug=debug)
+            
+            res =  read_particles_given_key_for_single_file(file_name, blocks, keylist, ptypes, periodic=periodic,center=ce, debug=debug, use_super_indexes=use_super_indexes)
             yield res
 
 
-def read_particles_in_box(snap_file_name,center,d, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True,debug=0):
+def read_particles_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=True,debug=0, use_super_indexes=None):
     """
     Python porting of the famous IDL Klaus read_particles_blocks_in_box
     """
-    if ptypes==-1:
-        only_joined_ptypes=True
-        ptypes=[0,1,2,3,4,5]
-
+    _ptypes = ptypes
+    if ptypes==-1 or (iterable(ptypes) and len(ptypes)==1 and ptypes[0]==-1):
+        _ptypes = [0,1,2,3,4,5]
     global_res = {}
 
-    for res in yield_particles_blocks_in_box(snap_file_name,center,d, blocks, ptypes, periodic=True, debug=debug):
 
-        #
-        # merge dictionaries from various block readings
-        #
-        for ptype in res:
-            res_ptype = res[ptype]
-            if ptype not in global_res:
-                global_res[ptype]={}
-            for block in res_ptype:
-                res_ptype_block = res_ptype[block]
-                if len(res_ptype_block)>0:
-                    if block not in global_res[ptype]:
-                
-                        global_res[ptype][block] = res_ptype_block
-                    else:
-                        global_res[ptype][block] = np.concatenate((global_res[ptype][block], res_ptype_block))
-                            
+    datas = [x for x in yield_particles_blocks_in_box(snap_file_name,center,d, blocks, _ptypes, periodic=True, debug=debug, use_super_indexes = use_super_indexes)]
+    res = join_list_of_results(datas)
+    res3 = flatten(res, blocks, ptypes)
 
-    global_res = join_res(global_res, blocks, join_ptypes, only_joined_ptypes)
-    
-    
-    return global_res
+    return res3
 
 
-def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True, periodic=True, center=None, is_snap=False):
+def read_new(filename, blocks, ptypes, periodic=True, center=None, is_snap=False):
     """
     Python porting of the famous IDL Klaus read_new
     """
@@ -1567,7 +1536,7 @@ def read_new(filename, blocks, ptypes, join_ptypes=True, only_joined_ptypes=True
         periodic = f.header.BoxSize
     else:
         periodic = None
-    return f.read_new(blocks, ptypes, join_ptypes=join_ptypes, only_joined_ptypes=only_joined_ptypes, periodic=periodic, center=center)
+    return f.read_new(blocks, ptypes,  periodic=periodic, center=center)
 
 def get_gadget_base_path(sim_path, snap, snap_prefix='snap_', folder_prefix ='snapdir_', snap_middle='', none_on_error=False):
     """ this routine searches for a snapshot or group file given a simulation base path (e.g. /gss/gss_work/DRES_murante/CLUSTERS/Dianoga/D2/dmo/10x_agn)
@@ -1596,78 +1565,5 @@ def get_snap_base_path(sim_path, snap, snap_prefix='snap_', folder_prefix ='snap
 def get_group_base_path(sim_path, snap, snap_prefix='sub_', folder_prefix ='groups_', snap_middle='', none_on_error=False):
     "same as get_snap_base_path but to find group_XXX/sub_XXX vs. sub_XXX"
     return get_gadget_base_path(sim_path, snap, snap_prefix=snap_prefix , folder_prefix =folder_prefix, snap_middle=snap_middle,  none_on_error=none_on_error)
-
-
-#
-# here  below a series of very ancient and forgotten routines to read group_tab_XXX.Y files
-#
-"""
-NOTE:
-
-The read_fof routines read read_group_tab_XXX.Y are only tested on Dianoga simulation outputs!
-"""
-
-
-
-def read_int_array(f,n):
-    return np.array(struct.unpack("%di"%n,f.read(4*n)))
-
-def read_float_array(f,n):
-    return np.array(struct.unpack("%df"%n,f.read(4*n)))
-
-def read_fof(filename, boxsize = None):
-    "read one FoF file (as group_tab_040, or group_tab_040.0)" 
-    import warnings
-    warnings.warn("read_fof() was only tested on Dianoga zoom-in results. Remember that SubFind files contains FoF output too, use them if available!")
-    with open(filename, "rb") as fin:
-        Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask =  struct.unpack("iiiiii",fin.read(4*6))
-        #print(Ngroups, TotNgroups, Nids, TotNids_1, TotNids_2, ntask )
-        TotNids=TotNids_1 #+TotNids_2*2e32
-        if (TotNids_2):
-            """
-            We need to read the following:
-              my_fwrite(&Ngroups, sizeof(int), 1, fd);
-              my_fwrite(&TotNgroups, sizeof(int), 1, fd);
-              my_fwrite(&Nids, sizeof(int), 1, fd);
-              my_fwrite(&TotNids, sizeof(long long), 1, fd);
-              my_fwrite(&NTask, sizeof(int), 1, fd);
-
-            """
-            raise Exception('too many haloes, one must combine fix the routine in order to combine the two integers into a long long')
-        #print(Ngroups, TotNgroups, Nids,  TotNids_1, TotNids_2, '->', TotNids, ntask)
-        #Ngroups = ntask # I dont know why
-        lens = read_int_array(fin, Ngroups)
-        offsets = read_int_array(fin, Ngroups)
-        mass = read_float_array(fin, Ngroups)
-        cm = read_float_array(fin, Ngroups*3).reshape(Ngroups,3)
-        if boxsize is not None:
-            cm =  cm - boxsize/2.
-        vels = read_float_array(fin, Ngroups*3).reshape(Ngroups,3)
-
-        return {"header":{"Ngroups":Ngroups, "NTasks":ntask,"NIDs":Nids}, "GLEN":lens, "offset":offsets, "MFOF":mass, "GPOS":cm, "GVEL":vels}
-
-def read_fofs(filename_base, boxsize = None):
-    "read and join multiple FoF file of the same snapshot (es, input 'group_tab_040' will read files .0, .1, etc..)" 
-    i=0
-    result = {}
-    if (os.path.isfile(filename_base)):
-        #it's single-file output
-        return read_fof(filename_base, boxsize = boxsize)
-    # here we process multi-file output
-    while True:
-        filename = '%s.%d'%( filename_base ,i)
-        if(not os.path.isfile(filename)):
-            if i==0:
-                raise Exception('Unable to open file %s'%filename)
-            break
-        data = read_fof(filename, boxsize = boxsize)
-        del data['header']
-        for key in data.keys():
-            if key not in result:
-                result[key]=data[key]
-            else:
-                result[key]=np.concatenate((result[key], data[key]))
-        i=i+1
-    return result
 
 
