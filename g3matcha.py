@@ -65,30 +65,34 @@ def dict_to_pairs(d):
 
 debug = False
 cache_from_filename_only = True
-cache_filename = None
-cache = None
 size_limit = 2000
 cache_type = 'pickle'
 recache = None
+cache_filename_default = 'cache'
+cache_filenames = {}
+
+
 def memoize(func):
-    global cache, size_limit,recache
+    global size_limit,recache
     """
     decorator to cache function results, taken from: https://dbader.org/blog/python-memoization
     """
     def memoized_func(*args, **kw):
-        global cache, size_limit, recache
+        global size_limit, recache
         if 'use_cache' not in kw or kw['use_cache']==False:
                 return func(*args, **kw)
         else:
-            if cache is None or recache==True:
-                cache = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
+            if isinstance(kw['use_cache'], str):
+                    cache_filename = kw['use_cache']
+            else:
+                    cache_filename = cache_filename_default
+                    
+            if cache_filename not in cache_filenames or recache==True:
+                cache_filenames[cache_filename] = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
+                cache_filenames[cache_filename].restore()
                 recache = None
-                if cache_filename is not None:
-                        if debug:
-                                print('# prima di restore ', cache.keys())
-                        cache.restore()
-                        if debug:
-                                print('# dopo di restore ', cache.keys())
+            cache = cache_filenames[cache_filename]
+
             funcname = func.__name__ if cache_from_filename_only else str(func)
             k = str((funcname, tuple(args), tuple(dict_to_pairs(kw))))
             if k in cache.keys():
