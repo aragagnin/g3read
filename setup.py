@@ -17,7 +17,7 @@ class build_py(build_py_orig):
 setup(
     cmdclass={'build_py': build_py},
     name='g3read',
-    version='1.0',
+    version='1.0.1',
     description='Read Gadget2/3 snapshots, large simulations and catalogues',
     url='https://aragagnin.github.io',
     author='Antonio Ragagnin',
