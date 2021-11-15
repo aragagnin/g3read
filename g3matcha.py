@@ -71,12 +71,12 @@ size_limit = 2000
 cache_type = 'pickle'
 recache = None
 def memoize(func):
-    global cache, size_limit
+    global cache, size_limit,recache
     """
     decorator to cache function results, taken from: https://dbader.org/blog/python-memoization
     """
     def memoized_func(*args, **kw):
-        global cache, size_limit
+        global cache, size_limit, recache
         if 'use_cache' not in kw or kw['use_cache']==False:
                 return func(*args, **kw)
         else:
