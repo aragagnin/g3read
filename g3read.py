@@ -513,7 +513,7 @@ class GadgetFile(object):
             if extra_len >= 2 ** 32:
                 block.length = extra_len
 
-            if not success:
+            if not success and name!="INFO":
                 # Figure out what particles are here and what types
                 # they have. This also is a heuristic, which assumes
                 # that blocks are either fully present or not for a
