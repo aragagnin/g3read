@@ -662,7 +662,7 @@ class GadgetFile(object):
                 name = _to_raw("UNK" + str(self.extra))
                 self.extra += 1
             return (name, record_size)
-    def get_block(self, name, ptype, p_toread, p_start=None):
+    def get_block(self, name, ptype, p_toread, p_start=None, ptypes = None):
         """Get a particle range from this file, starting at p_start,
         and reading a maximum of p_toread particles"""
         #name = _to_raw(name)
@@ -671,7 +671,7 @@ class GadgetFile(object):
         p_read = 0
 
         cur_block = self.blocks[name]
-        parts = self.get_block_parts(name, ptype)
+        parts = self.get_block_parts(name, ptype, ptypes = ptypes)
 
 
         if p_start==None: p_start = self.get_start_part(name, ptype)
@@ -696,19 +696,21 @@ class GadgetFile(object):
 
 
 
-    def get_block_parts(self, name, ptype):
+    def get_block_parts(self, name, ptype, ptypes= None):
         """Get the number of particles present in a block in this file"""
         if name not in self.blocks:
             return 0
         cur_block = self.blocks[name]
+        if ptypes is None:
+            ptypes = cur_block.ptypes
         if ptype == -1:
             if (debug>1):
                 print("cur block length=", cur_block.length," cur_block.partlen=",cur_block.partlen,"result", cur_block.length // cur_block.partlen)
             return cur_block.length // cur_block.partlen
         else:
             if (debug>1):
-                print(" self.header.npart[ptype] =", self.header.npart[ptype] ," cur_block.ptypes[ptype]",  cur_block.ptypes[ptype]," res",  self.header.npart[ptype] * cur_block.ptypes[ptype])
-            return self.header.npart[ptype] * cur_block.ptypes[ptype]
+                print(" self.header.npart[ptype] =", self.header.npart[ptype] ," cur_block.ptypes[ptype]",  ptypes[ptype]," res",  self.header.npart[ptype] * ptypes[ptype])
+            return self.header.npart[ptype] * ptypes[ptype]
 
     def get_start_part(self, name, ptype):
         """Find particle to skip to before starting, if reading particular type"""
@@ -809,6 +811,7 @@ class GadgetFile(object):
 
 
     def get_data_shape(self, g_name, ptype):
+        ptypes = None
         try:
             if g_name=="INFO" or self.info is None or (g_name not in self.info and g_name in self.blocks):
                 dtype=np.float32
@@ -824,16 +827,16 @@ class GadgetFile(object):
                dtype=self.blocks[g_name].data_type
            dim = np.dtype(dtype).itemsize
            cols = int(partlen/dim)
-           return cols,dtype
+           return cols,dtype, None
         elif g_name == "MASS" and "MASS" not in self.info:
-            return 1,np.float32
+            return 1,np.float32, None
         else:
            info = self.info
            if g_name not in self.info and g_name!="MASS":
                #print(ptype, self.header.mass, self.header.mass[ptype])
                raise Exception("block not found %s"%g_name)
            elif g_name not in self.info:
-               return 1,np.float32
+               return 1,np.float32, None
            binfo = self.info[g_name]
            stype = binfo[1]
            sdim = int(binfo[2])
@@ -846,7 +849,10 @@ class GadgetFile(object):
            if stype=="DOUBLEN ": dtype,cols=np.float64,sdim
            self.blocks[g_name].partlen = dtype().nbytes*cols
            partlen = self.blocks[g_name].partlen
-        return cols,dtype
+           ptypes = binfo[3:]
+           if debug:
+               print('# get_data_shape() w info block', cols,dtype, ptypes)
+        return cols,dtype, ptypes
 
     def read(self, block, ptype, p_toread=None, p_start=None, periodic=_periodic, center=None):
 
@@ -862,12 +868,12 @@ class GadgetFile(object):
 
 
        g_name = block
-       cols,dtype = self.get_data_shape (g_name, ptype)
+       cols,dtype, _ptypes = self.get_data_shape (g_name, ptype)
        #print(g_name, cols, dtype)
        if p_toread is None: 
            if (debug>1):
-               print("get block parts()")
-           f_parts = self.get_block_parts(g_name, ptype)
+               print("get block parts()", g_name, ptype, _ptypes)
+           f_parts = self.get_block_parts(g_name, ptype, ptypes=_ptypes)
        else:
            f_parts = p_toread
            
@@ -883,7 +889,11 @@ class GadgetFile(object):
            f_read = f_parts
            f_data = np.full(f_read, self.header.mass[ptype])
        else:
-           (f_read, f_data) = self.get_block(g_name, ptype, f_parts, p_start)
+           if debug:
+               print('# call get_block (',g_name, ptype, f_parts, p_start,')')
+           (f_read, f_data) = self.get_block(g_name, ptype, f_parts, p_start, ptypes = _ptypes)
+           if debug:
+               print('# call get_block returned ', f_read)
 
        
        if f_read != f_parts:
