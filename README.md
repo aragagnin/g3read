@@ -427,7 +427,7 @@ The script takes the parameter `-s <Service name>` where the service name can be
 the path of the dataset file name `-f <daraset.csv>`, the job parameters must be set with `-p` and must
 consist of the value displayes in the web portal.
 
-Below a list of all parameters.
+Below a list of all parameters. **Note: they are case sensitive.**
 
 ```
                         Form parameters.
@@ -450,11 +450,6 @@ Below a list of all parameters.
                             t_obs_input
                             img_z_size
                             simulate
-
-                            query:
-                            query
-                            page
-                            limit
 ```
 
 For instance the following will run a SMAC job over all objects in the dataset.csv:
@@ -465,13 +460,3 @@ python c2pap_batch.py -f dataset.csv -s SMAC -p content="bolometric x-ray lumino
 
 To avoid running duplicate jobs, use the flags ` --existing-jobs --cache-jobs cachefile.pickle` to make the script check for existing jobs with identical parameters.
 
-
-# Convert Gadget2 or 3 files to HDF5
-
-Use the utility `gadget_to_hdf5.py`.
-
-```bash
-python gadget_to_hdf5.py infile outfile
-```
-
-In case you need to map names diffrently from the default version, have a look at the source code of `gadget_to_hdf5.py` and edit your own mapping.
