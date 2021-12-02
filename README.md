@@ -21,8 +21,6 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
   - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
   - [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
-- [Handling Gadgets Units of Measurement with g3read_units.py](#handling-gadgets-units-of-measurement-with-g3read_unitspy)
-- [Maps of Large Simulations with g3maps.py](#maps-of-large-simulations-with-g3mapspy)
 - [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
 - [Convert Gadget2 or 3 files to HDF5](#convert-gadget2-or-3-files-to-hdf5)
 
@@ -353,68 +351,6 @@ in order to match haloes from snapshot A to snapshot B, run `./g3matcha.py` with
 ```bash
 ./g3matcha.py ./snapdir_136/snap_136 ./groups_136/sub_136 1   ./snapdir_dmo_136/snap_136 ./groups_dmo_136/sub_136 2
 ```
-
-
-#  Handling Gadgets Units of Measurement with g3read_units.py
-
-The library `g3read_units` read GadgetFiles (using `g3read`) and store blocks in [pint](https://pint.readthedocs.io/) datastructures. Gadget length blocks (e.g. `POS `) uses `pint`  units `glength` (defined ad `kpc * scalefactor / hubble`) and masses use `gmass` (degined as  `1e10 Msun/hubble`).
-
-The library `g3read_units` provides the same function `read_new` and `read_particles_in_a_box` as `g3read` and returns data with `pint` units.
-
-In this example we read code-units data and return it in physical units automatically:
-
-```python
-import g3read_units as g3u
-snap_base = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
-
-#this function reads h0 and z from the snapshot in order to convert between codeunits, comoving and physical units
-units = g3u.get_units(snap_base)
-ureg = units.get_u() #create pint ureg (see https://pint.readthedocs.io/)
-
-center = [500.,500.,500.] * ureg.glength  #we give a center in code units 
-distance = 500. * ureg.kpc # distance we give in real kpc
-
-data = g3u.read_particles_in_box(snap_base, center, distance, ["MASS", "POS "], -1):
-
-#distance is in kpc, while data['POS '] is in glength
-#here, thanks with 'pint' magic, we filter data based on physical kpc distance
-mask = ((data["POS "][:,0]-center)<distance) & ((data["POS "][:,1]-center)<distance) & ((data["POS "][:,2]-center)<distance)   
-
-#pint arrays work flowlessy with numpy
-total_mass = np.sum(data["MASS"])
-
-# we print total_mass  in physical Msun
-print(' Total Mass in physical Msun:', total_mass.to('Msun')) 
-``` 
-
-#  Maps of Large Simulations with g3maps.py
-
-If you use [SMAC](https://wwwmpa.mpa-garching.mpg.de/~kdolag/Smac/) you know that  you can only do 2D maps with a number of particles that fits your RAM memory. `g3maps.py` is slightly compatible with SMAC and is capable of producing maps of objects that do not fit RAM memory.
-
-
-`g3maps.py` uses [pint](https://pint.readthedocs.io/en/stable/) package, so **input parameters do specify units!** so there is no more painful confusion on Gadget units conversions. Here below the input parameter used to make the image (see file `g3maps.inp` )
-
-```bash
-IMG_XY_SIZE = 2209.112 glength
-IMG_Z_SIZE = 400.0*1.1344 kpc
-CENTER_X =   456582.8 glength
-CENTER_Y =   220605.1 glength
-CENTER_Z =   279066.1 glength
-SNAP_PATH = /HydroSims/Magneticum/Box2b/hr_bao//snapdir_031/snap_031
-PREFIX_OUT = spwze7x7kjx78ar5/povero_
-IMG_SIZE = 128
-PTYPES = 0,1,2,3,4 #,5
-JOB = 2DMAP
-MAP_DIVIDE_BY_SURFACE = True
-PROPERTY = MASS
-RESULT_UNITS = Msun #/cm^2 #Msu
-```
-
-As you can see `IMG_XY_SIZE` is specified in code units (`glength`) while `IMG_Z_SIZE` is specified in physical kiloparser .. you decide which units you want to specify! And here below is the output of the parameter file here above:
-
-![comparison between make_maps.py on the left and SMAC on the right](https://i.imgur.com/xmCauqV.png)
-
-I am still not sure why `g3maps.py` do produce a more noisy output. It may be that SMAC uses a different SPH kernel (I use top hat by now).
 
 
 
