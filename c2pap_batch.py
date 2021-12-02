@@ -173,6 +173,7 @@ def fill(br,f,v, debug=False, byval=False):
                 log(f,"-> [",v,']=',item.attrs['value'])
                 item_set = True
         if item_set == False:
+            print(br.form.find_control(f).items)
             raise Exception("Error: field %s has no value %s"%(f,v))
     else:
         log(f,"->",v)
@@ -476,7 +477,7 @@ def main():
     parser.add_argument('-s', '--service', choices=['SMAC','SimCut','PHOX','query','match'], help="Choose a service between SMAC, SimCut, PHOX. Check the lower/upper case.", required=True)
     parser.add_argument('-t', '--time-sleep', help="How frequently check the status of the job in seconds. Default=60", default=60, type=int)
     parser.add_argument('-a', '--auto-download', help="Download data after execution, default=True", default=True, type=bool)
-    parser.add_argument('-p', '--params', help="""Form parameters.
+    parser.add_argument('-p', '--params', help="""Form parameters. Nota bene: Form parameter values are case sensitive!
     SimCut:
     IMG_Z_SIZE
     r500factor
@@ -498,13 +499,6 @@ def main():
     img_z_size e.g. 2000
     simulate use '1' or '0'
 
-    query:
-    query
-    page
-    limit
-
-    there is the special job 'match' that will find progenitors and descendant by looking ad previous and next snapshots:
-    direction: 'parent'/'descendant'
     snaps: array of snaps, e.g. 'snap_056,snap_092,snap_136' - if empty all snaps will be tracked
     """,  nargs='+', default=["IMG_Z_SIZE=200","r500factor=1.0"])
     parser.add_argument('-j', '--cache-jobs', help="Cache jobs values in file", default=None, type=str)# "jobs.cache", type=str)
