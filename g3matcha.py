@@ -339,7 +339,7 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
             if (grnr[isubhalo_in_file]!=ihalo):
                 continue
             isubhalo+=1
-            subhalo['GRNR'] = grnr[ihalo]
+            subhalo['GRNR'] = ihalo
             subhalo['ihalo'] = ihalo
             subhalo['ifile'] = ifile
             subhalo['isubhalo'] = isubhalo
