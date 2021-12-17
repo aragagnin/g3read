@@ -20,7 +20,6 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
 - [Looping through haloes, their subhaloes, and IDs with g3matcha.py](#looping-through-haloes-their-subhaloes-and-ids-with-g3matchapy)
   - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
-  - [Matching haloes of two snapshots](#matching-haloes-of-two-snapshots)
 - [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
 - [Convert Gadget2 or 3 files to HDF5](#convert-gadget2-or-3-files-to-hdf5)
 
@@ -340,16 +339,6 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end=10, blocks
         print('    sub halo IDs:', subhalo['ids'])
 
 # the script will be much faster now!
-```
-
-
-## Matching haloes of two snapshots
-
-
-in order to match haloes from snapshot A to snapshot B, run `./g3matcha.py` with the following parameters: snapdir of snapshot A, group folder of snapshot A, DM match type of snapshot A (1 if bao, 2 if PATCH_IO DMO), path of snap B, path of groups B, DM partycle type of snap B.
-
-```bash
-./g3matcha.py ./snapdir_136/snap_136 ./groups_136/sub_136 1   ./snapdir_dmo_136/snap_136 ./groups_dmo_136/sub_136 2
 ```
 
 
