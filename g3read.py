@@ -27,7 +27,12 @@ import os
 import math
 import sys
 
+import collections
 
+try: 
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
 #
 # superindexing can use numba to speed up. 
 # if numba isn't installed we create a dummy @jit wrapper
@@ -82,7 +87,7 @@ def iterable(arg):
     e.g. functions will accept all of the following: array with one element ["MASS"], array with more elements ["MASS", "POS "] and also only "MASS"
 
     """
-    return isinstance(arg, collections.Iterable) and not isinstance(arg, string_types)
+    return isinstance(arg, collectionsAbc.Iterable) and not isinstance(arg, string_types)
 
 def iterate(arg):
     """
