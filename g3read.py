@@ -1542,7 +1542,7 @@ def read_particles_in_box(snap_file_name,center,d, blocks, ptypes,  periodic=Tru
     return res3
 
 
-def read_new(filename, blocks, ptypes, periodic=True, center=None, is_snap=False):
+def read_new(filename, blocks, ptypes, periodic=True, center=None, is_snap=False,  do_flatten=True):
     """
     Python porting of the famous IDL Klaus read_new
     """
@@ -1551,7 +1551,7 @@ def read_new(filename, blocks, ptypes, periodic=True, center=None, is_snap=False
         periodic = f.header.BoxSize
     else:
         periodic = None
-    return f.read_new(blocks, ptypes,  periodic=periodic, center=center)
+    return f.read_new(blocks, ptypes,  periodic=periodic, center=center,  do_flatten=do_flatten)
 
 def get_gadget_base_path(sim_path, snap, snap_prefix='snap_', folder_prefix ='snapdir_', snap_middle='', none_on_error=False):
     """ this routine searches for a snapshot or group file given a simulation base path (e.g. /gss/gss_work/DRES_murante/CLUSTERS/Dianoga/D2/dmo/10x_agn)
