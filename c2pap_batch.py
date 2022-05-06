@@ -475,7 +475,6 @@ def main():
     parser.add_argument('-w', '--weak-ssl', action='store_true', help="Doesn't check SSL certificate.", default=True)
     parser.add_argument('-e', '--existing-jobs', action='store_true',  help="Search for jobs with same parameters. If found, download its data.", default=False)
     parser.add_argument('-s', '--service', choices=['SMAC','SimCut','PHOX','query','match'], help="Choose a service between SMAC, SimCut, PHOX. Check the lower/upper case.", required=True)
-    parser.add_argument('-t', '--time-sleep', help="How frequently check the status of the job in seconds. Default=60", default=60, type=int)
     parser.add_argument('-a', '--auto-download', help="Download data after execution, default=True", default=True, type=bool)
     parser.add_argument('-p', '--params', help="""Form parameters. Nota bene: Form parameter values are case sensitive!
     SimCut:
@@ -512,7 +511,7 @@ def main():
 
     args = parser.parse_args()
 
-    globy["time_sleep"] = args.time_sleep
+    globy["time_sleep"] = 120
     globy["auto_download"] = args.auto_download
     args.ps = {}
     for p in args.params:
