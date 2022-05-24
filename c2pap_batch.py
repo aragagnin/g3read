@@ -1,5 +1,5 @@
 """
-c2pap-web-portal batch jobs, by Antonio Ragagnin (ragagnin@lrz.de), 2018.
+c2pap-web-portal batch jobs, by Antonio Ragagnin (ragagnin@lrz.de), 2018 - 2022.
 
 many thanks to Leonard Bauer for his beta testing.
 
@@ -598,12 +598,12 @@ def main():
         rs = j['rows']
         
         for label in h:
-            print (label, end='')
-
+            print (label, end=',')
+        print('')
         for row in rs:
             for cell in row:
                 print (cell, end='')
-
+            print('')
         sys.exit(0)
     jobs = {}
     if args.cache_jobs:
