@@ -456,7 +456,7 @@ def main():
     log ("===================================================")
     log ("=                                                 =")
     log ("= c2pap-web-portal batch jobs                     =")
-    log ("= By Antonio Ragagnin, 2018 - 2020.               =")
+    log ("= By Antonio Ragagnin, 2018 - 2022.               =")
     log ("= questions: antonio.ragagin@inaf.it              =")
     log ("=                                                 =")
     log ("===================================================")
