@@ -599,11 +599,10 @@ def main():
         
         for label in h:
             print (label, end=',')
-        print('')
+        
         for row in rs:
-            for cell in row:
-                print (cell, end=',')
-            print('')
+            print(', '.join(row))
+            
         sys.exit(0)
     jobs = {}
     if args.cache_jobs:
