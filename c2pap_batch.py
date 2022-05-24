@@ -597,9 +597,7 @@ def main():
         h = j['header']
         rs = j['rows']
         
-        for label in h:
-            print (label, end=',')
-        
+        print(', '.join(h))
         for row in rs:
             print(', '.join(row))
             
