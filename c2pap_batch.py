@@ -38,7 +38,7 @@ import sys
 
 
 BASE = "https://c2papcosmosim.uc.lrz.de" 
-__version__= "1.0 [21 april 2021]"
+__version__= "1.1 [24 May 2022]"
 __author__= "Antonio Ragagnin"
 globy = {}
 
