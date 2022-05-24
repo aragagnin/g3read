@@ -602,7 +602,7 @@ def main():
         print('')
         for row in rs:
             for cell in row:
-                print (cell, end='')
+                print (cell, end=',')
             print('')
         sys.exit(0)
     jobs = {}
