@@ -14,14 +14,13 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
   - [Access the header](#access-the-header)
   - [Reading FOF or Subfind files](#reading-fof-or-subfind-files)
   - [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
-  - [Writing  back to a new file](#writing--back-to-a-new-file)
   - [Writing a new snapshot file from scratch](#writing-a-new-snapshot-file-from-scratch)
-  - [Reading group_tab FoF output](#reading-group_tab-fof-output)
 - [Looping through haloes, their subhaloes, and IDs with g3matcha.py](#looping-through-haloes-their-subhaloes-and-ids-with-g3matchapy)
   - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
+  - [ Finding main progenitors](#finding-main-progenitors)
 - [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
-- [Convert Gadget2 or 3 files to HDF5](#convert-gadget2-or-3-files-to-hdf5)
+
 
 # Install
 
@@ -183,7 +182,9 @@ group_gas_masswtemp =  group_gas_data['TEMP'][group_gas_mask] * group_gas_data['
 group_gas_avgtemp =  np.mean(group_gas_masswtemp)/np.sum( group_gas_data['MASS'][group_gas_mask])
 ```
 
-## Writing  back to a new file
+Note you could also call `fof =  read_new(groupbase, "GPOS", 0, multiple_files=True, is_snap=False)` to join all FoF catalog files (`sub_136.0`, `sub_136.1`, etc..). You should do it only if you know it can fit your memory.
+
+## Writing a new snapshot file from scratch
 
 The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
 
@@ -204,7 +205,6 @@ potential = pp.gravitational_potential(masses, positions, center).potential
 f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
 
-## Writing a new snapshot file from scratch
 
 Here an example on how to create a Gadget snapshot and its header from scratch
 
@@ -246,21 +246,6 @@ f.add_file_block('MASS', 10*4, partlen=4) #add a block of 10*4*3 bytes each of 4
 f.write_block( 'POS ', -1, np.array([[1,2,3]]*30, dtype=np.float32)) #write 30 positions
 f.write_block( 'MASS', -1, np.array([1,2,3,4,5,6,7,7,7,7], dtype=np.float32)) #write 10 masses
 ```
-
-## Reading group_tab FoF output
-
-`g3read`  provides a reader for the very ancient and forgotten format of FoF `group_tab options.` Gadget3 can write many optional and unformatted information that `g3read` cannot understand. Currently it can onlt read FoF position `GPOS`, velocity `GVEL` and grouplen `GLEN` and mass MFOF`. Here an example to read from one single `group_tab` file or more:
-
-```python
-
-old_fof_format_data = read_fof('./groups_030/group_tab_030.0')
-centers = old_fof_format_data['GPOS']
-
-old_fofs_format_data = read_fof('./groups_030/group_tab_030') #here we get all fof outputs concatenated
-centers = old_fofs_format_data['GPOS']
-```
-
-
 # Looping through haloes, their subhaloes, and IDs with g3matcha.py
 
 `g3matcha.py` (which depends on `g3read`) provides high level functionality to perform for loop over haloes and their subhaloes.
@@ -341,7 +326,45 @@ for halo  in  matcha.yield_haloes(groupbase, with_ids=True, ihalo_end=10, blocks
 # the script will be much faster now!
 ```
 
+## Finding main progenitors
 
+The example below will find all progenitors of the main halo at snapshot 091.
+
+```python
+
+#we let g3matcha.find_progenitors_of_halo know how to generate FoF catalog path 
+groupbase_format = lambda snap_num: './groups_%03d/sub_%03d'%(snap_num, snap_num)
+
+snap_from = 91 # snapshot number where to find the target halo (progenitors will start from snap 62)
+halo_nr = 0 # index of target halo in snap 063
+snap_to=20 #lower snapshot number where to find for progenitors
+
+blocks = ('GPOS','RVIR','GLEN','MVIR') #blocks to be displayed per halo
+    
+# if one progenitor is not found in the previous snapshots, then code will keep search on `_trial_default` snapshots before it. 
+_trial_default = 3
+
+min_mass = 1e3. #minimum mass of the oldest progenitor
+
+groupbase = groupbase_format(snap_from)
+halo = next(g3m.yield_haloes(groupbase,  ihalo_start = halo_nr,  blocks=blocks, with_ids = True))
+halo['snap_from'] = snap_from
+
+print('# Starting loop on progenitors: ')
+
+for progenitor in g3matcha.find_progenitors_of_halo(
+        halo,
+        groupbase_format,
+        snap_to,
+        use_cache = False, #set to true to speedup
+        max_trials = _trial_default,
+        blocks=blocks,
+        min_mass = min_mass):
+        
+    print("- ihalo: ", progenitor['ihalo'])
+    print("  snap: ", progenitor['snap_from'])
+    print("  ids_frac: ", progenitor['ids_frac'])
+```
 
 #  batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py
 
