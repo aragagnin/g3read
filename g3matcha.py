@@ -216,7 +216,6 @@ def get_halo_ids(groupbase, goff, glen, ifile_start=0, goff_start=0, use_cache =
                     finish = True
                 if debug>0:
                         print( '# get_halo_ids: I read in the following range, ', start_reading, end_reading)
-                
                 ids_in_file = read_new(group_file,  'PID ', 2, use_cache = use_cache)
                 _partial_ids = ids_in_file[start_reading:end_reading]
                 del ids_in_file
@@ -347,6 +346,71 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
                 subhalo['ids'] = halo_ids[subhalo['SOFF']-halo_goff:subhalo['SOFF']+subhalo['SLEN']-halo_goff]
             yield subhalo
 
+
+def find_progenitors_of_halo(halo, groupbase_format,snap_to, max_distance=500., trial=None, max_trials=0, blocks=None, ids_min_frac=0.5, snap_from = None, min_mass=None, use_cache=False, debug=False):
+
+    halo_pos = halo['GPOS']
+    halo_ids = halo['ids']
+
+    if trial is None:
+        trial = max_trials
+    
+    # potrei volerlo passare durante i tentativi falliti
+    if snap_from is None: 
+        snap_from = halo['snap_from']
+ 
+    # we reached the final snapshot
+    if (snap_from-1)<=snap_to:
+        return
+
+    snap_now = snap_from-1
+    groupbase2 = groupbase_format(snap_now)
+
+    if debug:
+        print('# I search in snapnum:', snap_now, ' haloes with IDs from prev. halo')
+
+    for halo2 in  yield_haloes(groupbase2, with_ids=True, blocks=blocks, use_cache= use_cache):
+        
+        # non ha senso andare piu giu
+        if halo2['GLEN']<1e4: 
+            break
+        
+        ids_len = len(np.intersect1d(halo_ids, halo2['ids'], assume_unique=True))
+        ids_frac = float(ids_len)/float(len(halo_ids))
+        if ids_frac>ids_min_frac:
+            halo2['snap_from'] = snap_now
+            halo2['ids_frac'] = ids_frac
+
+            if debug:
+                print('# found match: ihalo: ', halo2['ihalo'],', snapnum:', snap_now, ', perc. of IDs in common: %.2f'%ids_frac)
+            yield halo2
+            
+        
+            # abbiamo finito con la ricerca della MAH
+            if(halo['MCRI']<min_mass):
+                if debug:
+                    print('# we found the least massive progenitor')
+                return
+            
+            yield from find_progenitors_of_halo(halo2, groupbase_format,  snap_to,
+                                                max_distance=max_distance, max_trials = max_trials,
+                                                min_mass = min_mass,
+                                                blocks=blocks,
+                                                ids_min_frac=ids_min_frac, debug=debug, use_cache = use_cache)
+    print('# we didnt find any match in snapnum', snap_now, ' has %.2f'%ids_frac, '% of common IDs, we will try on ',trial,'on previous catalogs')
+    # we didnt find any halo, let's try our luck in the next timeslice
+    if trial>0:
+        if debug:
+            print('# we will search for the same IDs in snapnum:', snap_now-1)
+        yield from find_progenitors_of_halo(halo, groupbase_format,  snap_to,
+                                        min_mass = min_mass,
+                                            max_distance=max_distance*1.2, trial=trial-1, max_trials = max_trials, 
+                                            blocks=blocks, snap_from = snap_now,      ids_min_frac=ids_min_frac, debug=debug, use_cache = use_cache)
+    else: # we give up if we dont find any halo in `_trial_default` snapshots back
+        if debug:
+            print('# no more progenitors found')
+        return
+
 @memoize
 def match_from_halo(halo_pos, halo_ids, groupbase2,   blocks = None,  max_distance=500., ids_min_frac=0.3, min_glen=1e4, use_cache = False):
 
@@ -355,7 +419,7 @@ def match_from_halo(halo_pos, halo_ids, groupbase2,   blocks = None,  max_distan
 
     for halo2 in  yield_haloes(groupbase2, with_ids=True, blocks=blocks, use_cache = use_cache):
 
-        if halo2['GLEN']<min_glen: #non ha senso andare piu giu
+        if halo2['GLEN']<min_glen: # non ha senso andare piu giu
             break
 
         ids_len = len(np.intersect1d(halo_ids, halo2['ids'], assume_unique = True))
