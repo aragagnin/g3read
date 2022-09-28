@@ -725,7 +725,13 @@ class GadgetFile(object):
             if name not in self.blocks:
                 return 0
             cur_block = self.blocks[name]
-            return (cur_block.ptypes * self.header.npart)[0:ptype].sum().astype(int)
+            if name in self.info:
+                _ptypes = self.info[name][3:] #info blocks after 3 are the ptypes 
+            else:
+                _ptypes = cur_block.ptypes
+            return (_ptypes * self.header.npart)[0:ptype].sum().astype(int)
+
+
 
     def get_block_dims(self, name):
         """Get the dimensionality of the block, eg, 3 for POS, 1 for most other things"""
