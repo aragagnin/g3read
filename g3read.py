@@ -806,7 +806,7 @@ class GadgetFile(object):
         _ptypes = ptypes
         if  ptypes==-1 or (iterable(ptypes) and len(ptypes)==1 and ptypes[0]==-1):
             _ptypes=[0,1,2,3,4,5]
-        for ptype in iterate(_ptypes):
+        for ptype in iterate(ptypes):
             res[ptype] = {}
             for block in iterate(blocks):
                 res[ptype][block] = self.read(block, ptype, center=center)
