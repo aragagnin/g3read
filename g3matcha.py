@@ -3,8 +3,8 @@
 These routines help match Gadget haloes between boxes and snapshots; to loop over haloes and subhaloes of a simulation and to match/extract subfind IDs.
 
 Antonio Ragagnin (2020) <ragagnin.antonio@gmail.com>
-
 """
+
 try:
         from . import g3read as g3
 except:
@@ -21,30 +21,24 @@ import pickle; #_pickle as cPickle
 
 
 class pdict(OrderedDict): #persistent dictionary
-        def __init__(self, filename = None, *args, **kw):
+        def __init__(self, filename = None, read_only = False,*args, **kw):
             super(pdict,self).__init__(*args, **kw)
             self.filename = filename
+            self.read_only = read_only
             if filename is not None:
                 if os.path.isfile(filename):
-                    self.restore()
-        def restore(self):
-            if self.filename is None:
-                raise Exception('cannot restore if filename is None')
-            if cache_type == 'pickle':
-                if os.path.isfile(self.filename):
-                        with open(self.filename,'rb') as f:
-                                d = pickle.load(f)
-                        self.update(d)
-                 
-        
+                    with open(filename,'rb') as f:
+                        d = pickle.load(f)
+                    self.update(d)
         def store(self):
             if self.filename is None:
-                raise Exception('cannot store if filename is None')
+                raise IOException('cannot store if filename is None')
+            if self.read_only:
+                raise IOException('dict is read only')
+            with open(self.filename+'~','wb') as f:
+                pickle.dump(dict(self),f)
+            os.rename(self.filename+'~',self.filename)
 
-            elif cache_type == 'pickle':
-                with open(self.filename+'~','wb') as f:
-                        pickle.dump(dict(self),f)
-                os.rename(self.filename+'~',self.filename)
 
 #
 # here below a small cache system to parse many FoF files fast.
@@ -89,7 +83,7 @@ def memoize(func):
                     
             if cache_filename not in cache_filenames or recache==True:
                 cache_filenames[cache_filename] = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
-                cache_filenames[cache_filename].restore()
+                #cache_filenames[cache_filename].restore()
                 recache = None
             cache = cache_filenames[cache_filename]
 
@@ -289,12 +283,9 @@ def yield_haloes(groupbase, ihalo_start=0, ihalo_end=None, min_value=None, min_b
             
             yield halo_info
             del halo_info
-            
-@memoize
-def get_all_files(groupbase, use_cache=False):
-    return list(g3.yield_all_files(groupbase))
 
-    
+
+
 def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, blocks=None, with_ids = False, halo_ids=None, halo_goff=0):
     """
     returns all subhaloes (each in a dict) and their FoF data (GLEN, GPOS, RCRI, MCRI) 
@@ -335,8 +326,10 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
         subhaloes_in_file = numpy_to_dict(data, blocks)
         #print('loppi')
         for isubhalo_in_file, subhalo in enumerate(subhaloes_in_file):
-            if (grnr[isubhalo_in_file]!=ihalo):
+            if (grnr[isubhalo_in_file]<ihalo):
                 continue
+            elif (grnr[isubhalo_in_file]>ihalo):
+                break
             isubhalo+=1
             subhalo['GRNR'] = ihalo
             subhalo['ihalo'] = ihalo
@@ -347,8 +340,17 @@ def yield_subhaloes(groupbase, ihalo, ifile_start=None,  use_cache = False, bloc
             yield subhalo
 
 
-def find_progenitors_of_halo(halo, groupbase_format,snap_to, max_distance=500., trial=None, max_trials=0, blocks=None, ids_min_frac=0.5, snap_from = None, min_mass=None, use_cache=False, debug=False):
-
+def find_progenitors_of_halo(halo, groupbase_format, snap_to=0, max_distance=500., trial=None, max_trials=0, blocks=None, ids_min_frac=0.5, snap_from = None, min_mass=None, use_cache=False, debug=False):
+    """
+    This function recursively search the progenitor halo in a previous snapshots.
+    To do so it loops over all haloes of the new snapshot until it finds one that share a large fraction of particle IDs.
+    Once a progenitor is found, the routine search the pro-progenitor in the previous-previous snapshot.
+    parameters:
+    - `halo` (encoded in a dict,  as returned from yield_halo(...),
+    - groupbase_format a routine that, when called for instance like groupbase_format('061') will return the path of the '061' catalog.
+    - final snapshot where to search for progenitor (in doubt set to 0)
+    - use_cache, set True or to a string to speed up the process
+    """
     halo_pos = halo['GPOS']
     halo_ids = halo['ids']
 
@@ -397,7 +399,8 @@ def find_progenitors_of_halo(halo, groupbase_format,snap_to, max_distance=500., 
                                                 min_mass = min_mass,
                                                 blocks=blocks,
                                                 ids_min_frac=ids_min_frac, debug=debug, use_cache = use_cache)
-    print('# we didnt find any match in snapnum', snap_now, ' has %.2f'%ids_frac, '% of common IDs, we will try on ',trial,'on previous catalogs')
+    if debug:
+        print('# we didnt find any match in snapnum', snap_now, ' has %.2f'%ids_frac, '% of common IDs, we will try on ',trial,'on previous catalogs')
     # we didnt find any halo, let's try our luck in the next timeslice
     if trial>0:
         if debug:
@@ -413,7 +416,10 @@ def find_progenitors_of_halo(halo, groupbase_format,snap_to, max_distance=500., 
 
 @memoize
 def match_from_halo(halo_pos, halo_ids, groupbase2,   blocks = None,  max_distance=500., ids_min_frac=0.3, min_glen=1e4, use_cache = False):
-
+    """
+    given a position and a list of IDs, search a halo in a given groupbase (groupbase2). This routine is used by yield_matches_from_haloes
+    to search for the same halo in two different simulated snapshot that were run with the same ICs and possibily with different physics
+    """
     if blocks is None:
         blocks = ('GPOS','GLEN')
 
@@ -432,7 +438,13 @@ def match_from_halo(halo_pos, halo_ids, groupbase2,   blocks = None,  max_distan
 
 
 def yield_matches_from_haloes(groupbase1, groupbase2,  blocks = None, filter = None, max_distance=500., ids_min_frac=0.3, min_glen=1e4, use_cache = False):
-    
+    """
+    Search for the same halo in two different simulated snapshot that were run with the same ICs and possibily with different physics,
+    or between to snapshot catalogs of the same simulation.
+    The two catalogs are supposed to be groupbase1 and groupbase2.
+    This routine, will return a generator that gives all couple of halo1, halo2 (as returned by the same format of yield_haloes(...) ),
+    where halo1 belongs to groupbase1 and halo2 belongs to groupbase2.
+    """
     if blocks is None:
         blocks = ('GPOS','GLEN')
 
@@ -444,3 +456,225 @@ def yield_matches_from_haloes(groupbase1, groupbase2,  blocks = None, filter = N
             halo1_ids = halo1['ids']
             halo2 = match_from_halo(halo1_pos, halo1_ids, groupbase2, blocks, max_distance, ids_min_frac, min_glen, use_cache=use_cache)
             yield halo1, halo2
+
+
+
+@memoize
+def get_all_files(groupbase, use_cache=False):
+    """  given a catalog base path `groupbase`, e.g. 'groups_061/sub_061', return a list of all catalog files.
+    it could be for instance  ['groups_061/sub_061'] (if it is a single-file catalog) or ['groups_061/sub_061.0', 'groups_061/sub_061.1'] 
+    (if it is a catalog stored in two files)"""
+    return list(g3.yield_all_files(groupbase))
+
+    
+
+def get_most_massive_halo(groupbase, iend=10, mblock = 'MVIR', blocks=None, use_cache = False):
+    """
+    get the most massive halo (as returned by `yield_haloes`) in a catalog stored in the path `groupbase` (you can set `groupbase='sub_061'` even if it is stored in multiple files)
+    based on the block `mblock` (default value 'MVIR').
+    """
+    hmax = None
+    if blocks is None:
+        blocks = (mblock,)
+    for _h in yield_haloes(groupbase, 0,iend, blocks=blocks, use_cache=use_cache):
+        if hmax is None or _h[mblock]>hmax[mblock]:
+            hmax = _h
+    return hmax
+
+
+def get_bcg(groupbase, halo, blocks, use_cache = False):
+    """
+    given the base path of a catalog  (e.g., you can set `groupbase='sub_061'` even if it is stored in multiple files),
+    and a `halo` dict (as returned by `yield_haloes(...)`), it returns its most massive subhalo (as returned by `yield_subhaloes`)
+    """ 
+    for sh in yield_subhaloes(groupbase,  ihalo=halo['ihalo'],
+                                blocks = blocks,
+                                halo_goff = halo['GOFF'],
+                                use_cache=use_cache):
+            return sh
+    
+                
+
+"""
+
+###############################################################################
+#            FROM HERE BELOW A LIST OF UNDOCUMENTED FUNCTIONS                 # 
+###############################################################################
+
+"""
+
+@memoize
+def read_particles_in_box(snapbase, gpos, radius, blocks, ptypes, use_super_indexes = None, use_cache=False):
+    return g3.read_particles_in_box(snapbase, gpos, radius, blocks, ptypes, use_super_indexes = use_super_indexes)
+
+def get_subhalo_particles(groupbase,  subhalo, halo, p = None, cache_p = None, use_cache = None):
+    soff =  subhalo['SOFF']
+    slen =  subhalo['SLEN']
+
+    grnr = subhalo['ihalo']
+    sub_id = subhalo['isubhalo'], halo['ihalo']
+    subhalo['_'] = subhalo['isubhalo'],halo['ihalo']
+
+    if cache_p is not None:
+            
+        _cache = cache_p
+        
+    else:
+        _cache = {}                
+    if 'nearby_haloes' not in _cache:
+        _cache['nearby_haloes']  = {}
+    if 'subs' not in _cache:
+        _cache['subs']  = {}
+   
+    if p is None:
+        raise Excepiton("to run get_subhalo_particles you must first run get_halo_particles and either use the same use_cache or pass its result in the p parameter")
+        
+    if  grnr not in _cache['nearby_haloes']:
+
+        _halo = next( yield_haloes(groupbase, grnr, with_ids=False, use_cache = use_cache))
+        if _halo['ihalo']!=grnr:
+            raise Exception('ihalo != grnr, %d,%d'%(halo['ihalo'], grnr))
+
+        _cache['nearby_haloes'][grnr] ={
+            'ids': get_halo_ids(groupbase, halo['GOFF'], halo['GLEN'], use_cache = use_cache)[0],
+            'goff':  halo['GOFF'],
+            'glen': halo['GLEN']
+        }
+        if cache_p is not None:
+            _cache.store()
+
+
+    data_p = _cache['subs']
+    if sub_id not in data_p:
+        nearby_halo_ids = _cache['nearby_haloes'][grnr]['ids']
+        nearby_halo_goff = _cache['nearby_haloes'][grnr]['goff']
+        nearby_halo_glen = _cache['nearby_haloes'][grnr]['glen']
+        particelle_all =  p
+        
+
+
+        subhalo_ids =  nearby_halo_ids[int(soff - nearby_halo_goff):int(soff + slen - nearby_halo_goff)]
+
+        subhalo_particle_masks = np.in1d(particelle_all['ID  '],subhalo_ids)
+
+
+        data_p[sub_id] = {"p": {k:  particelle_all[k][subhalo_particle_masks] for k in ['POS ','MASS','PTYPE']}}
+
+        if cache_p is not None:
+            _cache.store()
+                                    
+
+    return data_p[sub_id]['p']
+
+
+def set_p(d, k, f, *l, v=0, on_edited = None, debug = False, **kw):
+    d.setdefault('_edited', False)
+    d.setdefault('_versions', {})
+    _v = d['_versions'].setdefault(k, None)
+    if v==_v:
+        return d[k] 
+    if callable(f):
+        try:
+                d[k] = f(*l, **kw)
+        except:
+            print(v)
+            print(l)
+            print(dict(kw))
+            raise
+    else:
+        d[k] = f
+    d['_versions'][k] = v
+    d['_edited'] = True
+    if on_edited is not None:
+        if debug:
+            print('# store in set_p',k)
+        on_edited()
+    return d[k]
+
+def on_edited(d, f, debug=False, layer = 0):
+    run = False
+    for k,v in d.items():
+        if k=='_edited' and v:
+            if debug:
+                print("# set run in ",k, '_edited:',v)
+            d['_edited'] = False            
+            run = True
+        elif isinstance(v, dict):
+
+            _run = on_edited(v, f,  layer = layer+1, debug = debug)
+
+            run = run or _run
+            if debug and _run:
+                print("# edited in ",k, run)
+    if layer == 0 and run:
+        if debug:
+            print('# exec f..')
+        f()
+        if debug:
+            print('# execd f.')
+    return run
+
+
+
+def get_subhalo(grouppath,   ihalo, isubhalo, blocks = None, use_cache = None):
+    halo = None
+    halog = yield_haloes(grouppath, ihalo, ihalo_end=None, with_ids = True, use_cache=use_cache)
+    for halo in halog:
+        break
+    if blocks is None:
+        blocks = ('RHMS','SPOS','GRNR','VMAX','MSUB','SVEL')    
+    if halo is None: #there are no haloes
+        return
+    
+    subhaloesg = yield_subhaloes(grouppath, ihalo=halo['ihalo'], with_ids = True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'],  
+                                          blocks=blocks, use_cache=use_cache) 
+    for _isubhalo, subhalo in enumerate(subhaloesg):
+        if _isubhalo == isubhalo:
+            return subhalo
+    raise Exception('%s has no (%d, %d)'%(grouppath,   ihalo, isubhalo   ))
+
+
+def find_subhalo_in_snap(grouppath,   ids, threshold=0.5, use_cache = None):
+    candidates = {}
+    print('#        looping ',grouppath)
+    for halo  in  yield_haloes(grouppath, 0,  with_ids = True,  ihalo_end=None,
+                                      blocks=('GLEN', 'MVIR', 'RVIR', 'GPOS'), use_cache=use_cache):
+            for subhalo in  yield_subhaloes(grouppath, ihalo=halo['ihalo'],   with_ids = True, halo_ids = halo['ids'],  halo_goff = halo['GOFF'],  
+                                                    blocks=('RHMS','SPOS','GRNR','VMAX','MSUB','SVEL'), use_cache=use_cache):
+                common = np.sum(np.in1d(ids, subhalo['ids']))
+                f = float(common)/float(len(ids))
+                if f>threshold:
+                    print('#            found with ',f)
+                    return subhalo
+                elif f>0:
+                    print('#            store one with ',f)
+                    candidates[f] = subhalo
+    if len(candidates)>0:
+        min_key = max(candidates.keys())
+        print('#            return ',min_key)
+        return candidates[min_key]
+    else:
+        return None
+
+def get_subhalo_history(groupformat, snap_start, ihalo, isubhalo, history, use_cache = None):
+    subhalo = None
+    print('# history of ',groupformat(snap_start),(ihalo,isubhalo))
+    for snap_i in  reversed(range(1, snap_start+1)):
+        if snap_i in history:
+            subhalo = history[snap_i]
+            continue
+        
+        grouppath = groupformat(snap_i)
+        print('#    snap',snap_i, grouppath)
+        if not os.path.isfile(g3.get_one_file(grouppath)):
+            print('#    not exists.. continue')
+            continue
+        #print(subhalo)
+        if subhalo is None:
+            subhalo = get_subhalo(grouppath, ihalo, isubhalo, use_cache = use_cache)
+        else:
+            subhalo = find_subhalo_in_snap(grouppath, subhalo['ids'], use_cache = use_cache)
+        if subhalo is None:
+            return
+        yield snap_i, subhalo
+
