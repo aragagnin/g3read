@@ -115,21 +115,42 @@ all_other_properties_name = f.header.__dict__.keys()
 
 ## Reading FOF or Subfind files
 
-To read from the catalog you need to use `read_new` with the flag `is_snap=False`:
+To read from the catalog you need to use `read_new` with the flag `is_snap=False`.
+When reading this documentation please pay attention that there is an ambiguity when mentioning Subfind:
+it is both the algorithm to find only subhaloes within a halo (as opposed to FoF that only searches for haloes), 
+however the version implemented in gadget does write catalog files that contain also information about the FoF groups.
+There fore here below we will read both FoF haloes and Subfind subhaloes by reading Subfind outputs.
 
 ```python
 import g3read
 snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
 groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
 
-fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0, is_snap=False);
+# note that here set ptype as 0  (third argument)  because Subfind output of the FoF catalog
+# put it in the zeroth particle block. You would have to do the same even if you read the output
+# using Idl routines
+fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0, is_snap=False) 
+
+# here we are reading the subhaloes from Subfind catalog
+subfind =  g3read.read_new(groupbase+'.0', ['SPOS','SVEL','GRNR'], 1, is_snap=False) 
 
 print('positions: ', fof['GPOS'])
 print('r200cs: ', fof['RCRI'])
 print('m200cs ', fof['MCRI'])
 
 ```
-check `test_g3read.py` for a sample that converts subfind haloes to ASCII table.
+
+Check `test_g3read.py` for a sample that converts subfind haloes to ASCII table.
+
+Sometimes your simulation produce a small number of catalog files, g3read can concatenate the results for you if you use the parameter `multiple_files`:
+
+```python
+fof =  g3read.read_new(groupbase, ['GPOS','RCRI','MCRI'], 0, is_snap=False, multiple_files=True ) 
+subfind =  g3read.read_new(groupbase, ['SPOS','SVEL','GRNR'], 1, is_snap=False, multiple_files=True )) 
+
+```
+
+
 
 
 ## Reading from a large run with super indexes
