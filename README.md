@@ -19,7 +19,6 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
   - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
   - [ Finding main progenitors](#finding-main-progenitors)
-- [batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py](#batch-jobs-for-httpc2papcosmosimuclrzde-with-c2pap_batchpy)
 
 
 # Install
@@ -386,46 +385,4 @@ for progenitor in g3matcha.find_progenitors_of_halo(
     print("  snap: ", progenitor['snap_from'])
     print("  ids_frac: ", progenitor['ids_frac'])
 ```
-
-#  batch jobs for http://c2papcosmosim.uc.lrz.de/ with c2pap_batch.py
-
-Given a list of clusters previously extracted from the c2pap web portal (the output file name is `dataset.csv`), the script `c2pap_batch.py` automatize the process of sending the same jobs parameter to all those haloes.
-
-
-The script takes the parameter `-s <Service name>` where the service name can be `SMAC`,`SimCut`,`PHOX`,`query`,
-the path of the dataset file name `-f <daraset.csv>`, the job parameters must be set with `-p` and must
-consist of the value displayes in the web portal.
-
-Below a list of all parameters. **Note: they are case sensitive.**
-
-```
-                        Form parameters.
-                            SimCut:
-                            IMG_Z_SIZE
-                            r500factor
-
-                            SMAC:
-                            content
-                            IMG_SIZE
-                            IMG_Z_SIZE
-                            PROJECT
-                            r500factor
-
-                            PHOX:
-                            mode
-                            instrument (-1 for generic)
-                            instrument_a (only if generic)
-                            instrument_fov (only if generic)
-                            t_obs_input
-                            img_z_size
-                            simulate
-```
-
-For instance the following will run a SMAC job over all objects in the dataset.csv:
-
-```bash
-python c2pap_batch.py -f dataset.csv -s SMAC -p content="bolometric x-ray luminosity" IMG_SIZE=512 IMG_Z_SIZE=5000 PROJECT='along z, xy plane' r500factor=2.0 -u <YOUR USERNAME> 
-````
-
-To avoid running duplicate jobs, use the flags ` --existing-jobs --cache-jobs cachefile.pickle` to make the script check for existing jobs with identical parameters.
 
