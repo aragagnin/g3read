@@ -478,8 +478,18 @@ class GadgetFile(object):
                     # are in the header, we shouldn't have a MASS block
                     self.block_names.remove("MASS")
                 continue
-            # Set the partlen, using our amazing heuristics
             success = False
+            if self.info is not None and name[0:4] != "INFO":
+                _, stype, dims, *ptype = self.info[name[0:4]]
+                if stype=="FLOAT   ": block.data_type = np.float32
+                if stype=="FLOATN  ": block.data_type = np.float32
+                if stype=="LONG    ": block.data_type = np.int32
+                if stype=="LLONG   ": block.data_type = np.int64
+                if stype=="DOUBLE  ": block.data_type = np.float64
+                if stype=="DOUBLEN ": block.data_type = np.float64
+                block.partlen = np.dtype(block.data_type).itemsize * dims
+                success = True
+            # Set the partlen, using our amazing heuristics
             if name[0:4] == "POS " or name[0:4] == "VEL ":
                 if block.length == t_part * 24:
                     block.partlen = 24
