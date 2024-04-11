@@ -488,6 +488,7 @@ class GadgetFile(object):
                 if stype=="DOUBLE  ": block.data_type = np.float64
                 if stype=="DOUBLEN ": block.data_type = np.float64
                 block.partlen = np.dtype(block.data_type).itemsize * dims
+                block.ptypes = ptype
                 success = True
             # Set the partlen, using our amazing heuristics
             if name[0:4] == "POS " or name[0:4] == "VEL ":
