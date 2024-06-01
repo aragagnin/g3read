@@ -585,7 +585,7 @@ class GadgetFile(object):
             # Mass should be the same type as POS (see issue #321)
             block.data_type = self.blocks['POS '].data_type
             block.partlen = np.dtype(block.data_type).itemsize
-            self.blocks[b'MASS'] = block
+            self.blocks['MASS'] = block
 
 #        print('blocchi:', self.blocks)
     def get_block_types(self, block, npart):
