@@ -512,23 +512,12 @@ class GadgetFile(object):
                 success = True
 
             block.start = fd.tell()
-            # Check for the case where the record size overflows an int.
-            # If this is true, we can't get record size from the length and we just have to guess
-            # At least the record sizes at either end should be consistently wrong.
-            # Better hope this only happens for blocks where all particles are
-            # present.
-            extra_len = t_part * block.partlen
-            if extra_len >= 2 ** 32:
-                fd.seek(extra_len, 1)
-            else:
-                fd.seek(block.length, 1)
+            fd.seek(block.length, 1)
             record_size = self.read_block_foot(fd)
             if record_size != block.length:
                 raise IOError("Corrupt record in " +
                               filename + " footer for block " + name + "dtype" + str(block.data_type))
-            if extra_len >= 2 ** 32:
-                block.length = extra_len
-
+            
             if not success and name!="INFO":
                 # Figure out what particles are here and what types
                 # they have. This also is a heuristic, which assumes
