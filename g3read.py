@@ -577,15 +577,18 @@ class GadgetFile(object):
 
         # Make a mass block if one isn't found.
         if is_snap and 'MASS' not in self.blocks:
-            block = GadgetBlock()
-            block.length = 0
-            block.start = 0
+            pass 
+            # I realised this thing below never worked because 
+            # I assign the block b'MASS' instead of 'MASS' so I can just remove it when I am sure about it
+            #block = GadgetBlock()
+            #block.length = 0
+            #block.start = 0
 
             #print(self.blocks)
-            # Mass should be the same type as POS (see issue #321)
-            block.data_type = self.blocks['POS '].data_type
-            block.partlen = np.dtype(block.data_type).itemsize
-            self.blocks[b'MASS'] = block
+            ## Mass should be the same type as POS (see issue #321)
+            #block.data_type = self.blocks['POS '].data_type
+            #block.partlen = np.dtype(block.data_type).itemsize
+            #self.blocks[b'MASS'] = block
 
 #        print('blocchi:', self.blocks)
     def get_block_types(self, block, npart):
@@ -887,7 +890,10 @@ class GadgetFile(object):
             else:
                 l = p_toread
                 return np.zeros(l)+self.header.mass[ptype]
-
+       elif block=='MASS' and ptype==-1 and p_toread is None and p_start is None:
+           #concatenate mass blocks in case one calls with -1
+           #the recursive read will either grab the value from header.mass[] or from the block MASS
+           return np.concatenate(tuple(self.read("MASS", p) for p in (0,1,2,3,4,5) if  self.header.npart[p]>0))
 
        g_name = block
        cols,dtype, _ptypes = self.get_data_shape (g_name, ptype)
