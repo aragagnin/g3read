@@ -995,7 +995,7 @@ class GadgetFile(object):
         except IOError as err:
             # If we couldn't open it because it doesn't exist open it for
             # writing.
-            if err == errno.ENOENT:
+            if err.errno == errno.ENOENT:
                 fd = open(filename, "w+b")
             # If we couldn't open it for any other reason, reraise exception
             else:
