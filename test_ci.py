@@ -1,16 +1,5 @@
 import g3read, g3matcha, numpy as np, urllib.request, os
 
-
-
-def download_from_googledrive(url_googledrive, outname):
-    file_id = url_googledrive.split('/')[-2]
-    download_url =  'https://docs.google.com/uc?export=download&id=' + file_id
-    print('downloading...', download_url,'into',outname)
-    urllib.request.urlretrieve(download_url, outname)
-
-if not os.path.isfile('snap_024'):
-    download_from_googledrive('https://drive.google.com/file/d/1b4u1HLaXyBIXLfnqOYhZsA_iAWme3KWA/view?usp=sharing', 'snap_024')
-
 array = np.array
 uint32 = np.uint32
 int32 = np.int32
