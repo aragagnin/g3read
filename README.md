@@ -12,7 +12,7 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
 
 **Table of Contents:**
 
-- [Install](#install)
+- [Install and test](#install-and-test)
 - [read Gadget and key files with g3read.py](#read-gadget-and-key-files-with-g3readpy)
   - [Read a single Gadget file](#read-a-single-gadget-file)
   - [Access the header](#access-the-header)
@@ -25,7 +25,7 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
   - [ Finding main progenitors](#finding-main-progenitors)
 
 
-# Install
+# Install and test
 
 The spirit of this collection of files is that you do not need to download all those files: you can read the documentation and just download the single files that you need for your tasks.
 
@@ -36,6 +36,14 @@ python -mpip install  git+https://github.com/aragagnin/g3read
 ```
 
 and you will be able to `import g3read`, `import g3matcha` or `import g3read_units` in your scripts without any further download.
+
+To test the code, download the sample snaphots and subfind output from this Google Drive: https://drive.google.com/drive/folders/1_3HfvqQOuWMiLeuJqSOd58e3y9lZ4xRY?usp=sharing
+(alternatively, run `test_ci.bash` to download them automatically with `wget`).
+
+Then, run the following to run some read tests on these sample snapshots:
+```bash
+python test_ci.py
+``` 
 
 # Read Gadget and key files with g3read.py
 
