@@ -728,7 +728,7 @@ class GadgetFile(object):
             if name not in self.blocks:
                 return 0
             cur_block = self.blocks[name]
-            if name in self.info:
+            if self.info is not None and name in self.info:
                 _ptypes = self.info[name][3:] #info blocks after 3 are the ptypes 
             else:
                 _ptypes = cur_block.ptypes
