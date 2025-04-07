@@ -468,6 +468,7 @@ class GadgetFile(object):
                     raise IOError("Could not read HEAD block in " + filename)
                 self.header = _construct_gadget_header(
                     self.header, self.endian)
+        
                 record_size = self.read_block_foot(fd)
                 if record_size != 256:
                     raise IOError("Bad record size for HEAD in " + filename)
@@ -479,7 +480,7 @@ class GadgetFile(object):
                     self.block_names.remove("MASS")
                 continue
             success = False
-            if self.info is not None and name[0:4] != "INFO":
+            if self.info is not None and name[0:4] != "INFO" and name[0:4] in self.info:
                 _, stype, dims, *ptype = self.info[name[0:4]]
                 if stype=="FLOAT   ": block.data_type = np.float32
                 if stype=="FLOATN  ": block.data_type = np.float32
@@ -556,9 +557,7 @@ class GadgetFile(object):
                 
             if not success:
                 pass
-                #warnings.warn("Encountered a gadget block %r which could not be interpreted - is it a strange length or data type (length=%d)?" %
-                #          (name, block.length), RuntimeWarning)
-#            else:
+
 
 
         # and we're done.
@@ -633,6 +632,7 @@ class GadgetFile(object):
         """Unpacks the block footer, into a single integer"""
         record_size = fd.read(4)
         if len(record_size) != 4:
+            print(len(record_size))
             raise IOError("Could not read block footer")
         (record_size,) = struct.unpack(self.endian + 'I', record_size)
         return record_size
@@ -749,12 +749,13 @@ class GadgetFile(object):
         """Write a full block of data in this file. Any particle type can be written. If the particle type is not present in this file,
         an exception KeyError is thrown. If there are too many particles, ValueError is thrown.
         big_data contains a reference to the data to be written. Type -1 is all types"""
-        name =  _to_raw(name) #convert string to binary data
         try:
             
             cur_block = self.blocks[name]
         except KeyError:
-            raise KeyError("Block " + name + " not in file " + self._filename)
+            print(self.blocks.keys())
+            raise KeyError("Block " + str(name) + " not in file " + self._filename)
+
 
         parts = self.get_block_parts(name, ptype)
         p_start = self.get_start_part(name, ptype)
@@ -800,7 +801,6 @@ class GadgetFile(object):
         if ptype == MaxType or ptype < 0:
             data = self.write_block_footer(name, cur_block.length)
             fd.write(data)
-
         fd.close()
     
     def read_new(self, blocks, ptypes, periodic=_periodic, center=None, do_flatten=True):
@@ -930,7 +930,6 @@ class GadgetFile(object):
 
     def add_file_block(self, name, blocksize, partlen=4, dtype=np.float32, ptypes=-1):
         """Add a block to the block table at the end of the file. Do not actually write anything"""
-        name = _to_raw(name)
 
         if name in self.blocks:
             raise KeyError(

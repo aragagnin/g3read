@@ -1,9 +1,72 @@
-import g3read, g3matcha, numpy as np, urllib.request, os
+import g3read, g3matcha, numpy as np, urllib.request, os, shutil
 
 array = np.array
 uint32 = np.uint32
 int32 = np.int32
 float32 = np.float32
+
+#
+# test 0a: edit a snapshot block and read it
+#
+shutil.copy('snap_024','snap_024.mod')
+f = g3read.GadgetFile('snap_024')
+ntot = np.sum(f.header.npart[:]) # number of particles in the snapshot
+new_block = np.zeros((ntot, 3)) - 1.
+f.write_block("POS ", -1, new_block, filename='snap_024.mod')
+assert(np.all(g3read.read_new('snap_024.mod','POS ',-1) == new_block)) # test read
+
+#
+# test 0b: add a snapshot block and read it
+#
+shutil.copy('snap_024','snap_024.add')
+f = g3read.GadgetFile('snap_024.add')
+shape = 3
+ntot = np.sum(f.header.npart[:]) # number of particles in the snapshot
+new_block = np.zeros((ntot, shape),dtype=np.float32) - 1.
+partlen = new_block.dtype.itemsize*shape
+nbytes = ntot * partlen
+f.add_file_block('TEST', nbytes, partlen=partlen) #add a block of 30*4*3 bytes each of 4*3 bytes
+f.write_block("TEST", -1, new_block)
+assert(np.all(g3read.read_new('snap_024.add','TEST',-1) == new_block)) # test read
+
+#
+# test 0c: create a snapshot from scratch
+#
+filename = 'mysnap'
+npart = np.array([10,20,0,0,0,0])
+mass_table  =  [0.]*6
+mass_table[1] = 0.1 #ptype1 has fixed mass == 0.1
+redshift = 1.0
+time = 1./(redshift+1.)
+BoxSize=100.
+Omega0 = 0.27
+OmegaLambda = 1. - Omega0
+HubbleParam = .704 #or should I put 70.4? I do not remember
+num_files = 1
+open(filename, 'w').close() # create empty file
+
+# generate header
+header = g3read.GadgetHeader(npart, mass_table, time, redshift, BoxSize, Omega0, OmegaLambda, HubbleParam, num_files=num_files)
+# write header to file
+f = g3read.GadgetWriteFile(filename, npart, {}, header) #write header file
+f.write_header(f.header)
+
+#allocate blocks data
+n_pos =  np.sum(npart[:]) # all particles have pos
+pos =  np.array([[1,2,3]]*n_pos, dtype=np.float32)
+itemsize_pos = pos.dtype.itemsize * pos.shape[1]
+f.add_file_block('POS ', np.sum(npart[:])*itemsize_pos  , partlen=itemsize_pos) #add a block of 30*4*3 bytes each of 4*3 bytes
+
+n_mass = npart[0] # block 1 has mass in masstable
+mass = np.array(np.arange(n_mass), dtype=np.float32)#create some mass values
+itemsize_mass = mass.dtype.itemsize * 1
+f.add_file_block('MASS', n_mass*itemsize_mass, partlen=itemsize_mass) #add a block of 10*4*3 bytes each of 4 bytes
+
+#write blocks data to disk
+f.write_block( 'POS ', -1, pos) #write 30 positions
+f.write_block( 'MASS', -1, mass)
+assert(np.all(g3read.read_new(filename,'POS ',-1) == pos)) # test read pos
+assert(np.all(g3read.read_new(filename,'MASS',-1) == np.concatenate((mass, np.ones(npart[1]) * mass_table[1] )))) # test readmass
 
 #
 # test 1: read of header

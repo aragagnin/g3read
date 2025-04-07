@@ -233,7 +233,7 @@ f = g3read.GadgetFile(my_filename)
 positions = f.read_new("POS ",-1) #-1 means all particles
 masses = f.read_new("MASS",-1)
 potential = pp.gravitational_potential(masses, positions, center).potential
-
+# note that my_filename_output must already exists: you had to copy snap_123 into ./test/new_snap_132 first
 f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
 
