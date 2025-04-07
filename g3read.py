@@ -281,7 +281,7 @@ def _construct_gadget_header(data, endian='='):
     mass = np.zeros(N_TYPE)
     time = 0.
     redshift = 0.
-    npartTotal = np.zeros(N_TYPE, dtype=np.int32)
+    npartTotal = np.zeros(N_TYPE, dtype=np.uint32)
     num_files = 0
     BoxSize = 0.
     Omega0 = 0.
@@ -290,7 +290,7 @@ def _construct_gadget_header(data, endian='='):
     NallHW = np.zeros(N_TYPE, dtype=np.int32)
     if data == '':
         return
-    fmt = endian + "IIIIIIddddddddiiIIIIIIiiddddiiIIIIIIiiif48s"
+    fmt = endian + "IIIIII" "dddddd" "ddii" "IIIIII" "iiddddii" "IIIIII" "iiif" "48s"
     if struct.calcsize(fmt) != 256:
         raise Exception(
             "There is a bug in gadget.py; the header format string is not 256 bytes")
