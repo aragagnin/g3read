@@ -29,10 +29,10 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
 
 The spirit of this collection of files is that you do not need to download all those files: you can read the documentation and just download the single files that you need for your tasks.
 
-However on `python3` you can also install the package with the following command:
+However on `python3` you can also install it with pypi
 
 ```bash
-python -mpip install  git+https://github.com/aragagnin/g3read
+pip install g3read
 ```
 
 and you will be able to `import g3read`, `import g3matcha` or `import g3read_units` in your scripts without any further download.
