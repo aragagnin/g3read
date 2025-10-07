@@ -28,12 +28,7 @@ jobs:
         pip install numpy
     - name: Test with pytest
       run: bash test_ci.bash
-    - name: Build
-      run: |
-        pip install setuptools wheel build
-        pyproject-build
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+
   pypi-publish:   
     runs-on: ubuntu-latest
     environment:
