@@ -73,14 +73,16 @@ def memoize(func):
     """
     def memoized_func(*args, **kw):
         global size_limit, recache
-        if 'use_cache' not in kw or kw['use_cache']==False:
+        if 'use_cache' not in kw or kw['use_cache'] in [False,None]:
                 return func(*args, **kw)
         else:
             if isinstance(kw['use_cache'], str):
-                    cache_filename = kw['use_cache']
+                cache_filename = kw['use_cache']
+            elif kw['use_cache'] == True:
+                cache_filename = cache_filename_default
             else:
-                    cache_filename = cache_filename_default
-                    
+                raise Exception(f"use_cache should be, None/False (no caching), True (save to 'cache') or a filename string")
+
             if cache_filename not in cache_filenames or recache==True:
                 cache_filenames[cache_filename] = LimitedSizeDict(filename = cache_filename, size_limit = size_limit)
                 #cache_filenames[cache_filename].restore()
