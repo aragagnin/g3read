@@ -488,6 +488,8 @@ class GadgetFile(object):
                 if stype=="LLONG   ": block.data_type = np.int64
                 if stype=="DOUBLE  ": block.data_type = np.float64
                 if stype=="DOUBLEN ": block.data_type = np.float64
+                if stype=="FLOAT16 ": block.data_type = np.float16
+                if stype=="FLOAT16N": block.data_type = np.float16
                 block.partlen = np.dtype(block.data_type).itemsize * dims
                 block.ptypes = ptype
                 success = True
@@ -861,6 +863,8 @@ class GadgetFile(object):
            if stype=="LLONG   ": dtype=np.int64
            if stype=="DOUBLE  ": dtype=np.float64
            if stype=="DOUBLEN ": dtype,cols=np.float64,sdim
+           if stype=="FLOAT16 ": dtype=np.float16
+           if stype=="FLOAT16N": dtype,cols=np.float16,sdim
            self.blocks[g_name].partlen = dtype().nbytes*cols
            partlen = self.blocks[g_name].partlen
            ptypes = binfo[3:]
