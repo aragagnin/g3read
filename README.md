@@ -1,14 +1,12 @@
 ![test result](https://github.com/aragagnin/g3read/actions/workflows/python-app.yml/badge.svg)
 
-
-This repository hosts a  collection of tools to read and post-process  large `Gadget2` and `Gadget3` files (including key files).
+This repository hosts a collection of tools to read and post-process large `Gadget2` and `Gadget3` files (including key files).
 The core routines (`g3read.py`) are a composition compbining some `pynbody` and a porting of some legacy _Klaus' IDL_ routines.
 to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and to convert gadget files to HDF5
 
 **For questions**: Antonio Ragagnin <antonio.ragagnin@unibo.it> (https://aragagnin.github.io)
 
 **Note, I moved the c2pap batch job script here**: https://aragagnin.github.io/c2pap_batch.html
-
 
 **Table of Contents:**
 
@@ -18,12 +16,12 @@ to send batch jobs to the [c2pap web portal](http://c2papcosmosim.uc.lrz.de/)and
   - [Access the header](#access-the-header)
   - [Reading FOF or Subfind files](#reading-fof-or-subfind-files)
   - [Reading from a large run with super indexes](#reading-from-a-large-run-with-super-indexes)
+  - [Fast Reading of Multiple Gadget Files](#fast-reading-of-multiple-gadget-files)
   - [Writing a new snapshot file from scratch](#writing-a-new-snapshot-file-from-scratch)
 - [Looping through haloes, their subhaloes, and IDs with g3matcha.py](#looping-through-haloes-their-subhaloes-and-ids-with-g3matchapy)
   - [Looping through haloes and sub haloes](#looping-through-haloes-and-sub-haloes)
   - [Caching of data to speedup SubFind or FoF reading](#caching-of-data-to-speedup-subfind-or-fof-reading)
   - [ Finding main progenitors](#finding-main-progenitors)
-
 
 # Install and test
 
@@ -41,17 +39,18 @@ To test the code, download the sample snaphots and subfind output from this Goog
 (alternatively, run `test_ci.bash` to download them automatically with `wget`).
 
 Then, run the following to run some read tests on these sample snapshots:
+
 ```bash
 python test_ci.py
-``` 
+```
 
 # Read Gadget and key files with g3read.py
 
-To read  napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody). The library `g3read` will use [numba](http://numba.pydata.org) if available.
+To read napshots and FoF/SubFind outputs all you need is `g3read.py`. This library contains the GadgetFile class from [pynbody](https://github.com/pynbody/pynbody). The library `g3read` will use [numba](http://numba.pydata.org) if available.
 
 ## Read a single Gadget file
 
-The easiset way to read from a Gadget file is to use the function `read_new` (a clone of Klaus Dolag IDL routine). 
+The easiset way to read from a Gadget file is to use the function `read_new` (a clone of Klaus Dolag IDL routine).
 
 ```python
 read_new(filename, blocks, ptypes, center=None, is_snap=True, join_ptypes=False)
@@ -59,11 +58,11 @@ read_new(filename, blocks, ptypes, center=None, is_snap=True, join_ptypes=False)
 
 - `filename`: path of the gadget file
 - `blocks`: block(s) to read. Can be a string or a list of one or more strings (e.g. `"MASS"`, `["MASS"]`, or `["MASS", "POS "]`). Blocks must be 4characters long. E.g. use `"ID   "` to read IDs.
-- `ptypes`: can be an integer  or a list of integers representing the particle type (e.g. `1`, `[1]`, or `[0,1,2,3,4,5]`). Using `-1` equals to asking for all blocks.
-`center`: if set turns on the periodic (PBC) assumpions. 
+- `ptypes`: can be an integer or a list of integers representing the particle type (e.g. `1`, `[1]`, or `[0,1,2,3,4,5]`). Using `-1` equals to asking for all blocks.
+  `center`: if set turns on the periodic (PBC) assumpions.
 - `is_snap`: default is `True`. Set to `False` in order to read SUBFIND data
 - `join_ptypes`: default is `True`. If `False` return a dictionary with data separated by ptype.
-- return type depends on the input data: if `blocks` is a list, then the result is a dictionary of array data for each block (see examples below) 
+- return type depends on the input data: if `blocks` is a list, then the result is a dictionary of array data for each block (see examples below)
 
 Examples:
 
@@ -72,13 +71,13 @@ import g3read
 
 # read one block per time from all ptype:
 mass =  g3read.read_new("./test/snap_132", "MASS", -1) #the -1 means to select all particles
-pos  = g3read.read_new("./test/snap_132", "POS ", -1) 
+pos  = g3read.read_new("./test/snap_132", "POS ", -1)
 x = pos[:,0]
 y = pos[:,1]
 
 # read one block per time from one ptype:
 mass =  g3read.read_new("./test/snap_132", "MASS", 4) #the 4 means to select star particles
-pos  = g3read.read_new("./test/snap_132", "POS ", 4) 
+pos  = g3read.read_new("./test/snap_132", "POS ", 4)
 
 # read multiple blocks from one ptype
 data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], 0) #the 0 select only gas particles
@@ -91,7 +90,7 @@ stars_and_gas_pos = data["POS "]
 stars_and_gas_mass = data["POS "]
 #And use the artificial block `PTYPE` to filter by particle type:
 gas_mask = data["PTYPE"]==0
-gas_temp = data["TEMP"][gas_mask] 
+gas_temp = data["TEMP"][gas_mask]
 
 # read multiple blocks from multiple ptypes, each in a separate array (note join_ptyes=False)
 data =  g3read.read_new("./test/snap_132", ["POS ", "MASS"], [0,4], join_ptypes=False) #the 0,4 select  gas and star particles
@@ -102,13 +101,14 @@ gas_mass  = data[0]["MASS"]
 
 ```
 
-There is **Object Oriented version** in case you need multiple call `read_new` multiple times from a file, you can instantiate a GadgetFile  separately (note `is_snap=False` when reading a catalog):
+There is **Object Oriented version** in case you need multiple call `read_new` multiple times from a file, you can instantiate a GadgetFile separately (note `is_snap=False` when reading a catalog):
 
 ```python
 f = g3read.GadgetFile("./test/snap_132")
 mass =  f.read_new("MASS", 4)
-pos  = f.read_new("POS ", 4) 
+pos  = f.read_new("POS ", 4)
 ```
+
 ## Access the header
 
 You can access the header field of the object `GadgetFile`. As in the following example
@@ -128,7 +128,7 @@ all_other_properties_name = f.header.__dict__.keys()
 
 To read from the catalog you need to use `read_new` with the flag `is_snap=False`.
 When reading this documentation please pay attention that there is an ambiguity when mentioning Subfind:
-it is both the algorithm to find only subhaloes within a halo (as opposed to FoF that only searches for haloes), 
+it is both the algorithm to find only subhaloes within a halo (as opposed to FoF that only searches for haloes),
 however the version implemented in gadget does write catalog files that contain also information about the FoF groups.
 There fore here below we will read both FoF haloes and Subfind subhaloes by reading Subfind outputs.
 
@@ -140,10 +140,10 @@ groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
 # note that here set ptype as 0  (third argument)  because Subfind output of the FoF catalog
 # put it in the zeroth particle block. You would have to do the same even if you read the output
 # using Idl routines
-fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0, is_snap=False) 
+fof =  g3read.read_new(groupbase+'.0', ['GPOS','RCRI','MCRI'], 0, is_snap=False)
 
 # here we are reading the subhaloes from Subfind catalog
-subfind =  g3read.read_new(groupbase+'.0', ['SPOS','SVEL','GRNR'], 1, is_snap=False) 
+subfind =  g3read.read_new(groupbase+'.0', ['SPOS','SVEL','GRNR'], 1, is_snap=False)
 
 print('positions: ', fof['GPOS'])
 print('r200cs: ', fof['RCRI'])
@@ -156,13 +156,10 @@ Check `test_g3read.py` for a sample that converts subfind haloes to ASCII table.
 Sometimes your simulation produce a small number of catalog files, g3read can concatenate the results for you if you use the parameter `multiple_files`:
 
 ```python
-fof =  g3read.read_new(groupbase, ['GPOS','RCRI','MCRI'], 0, is_snap=False, multiple_files=True ) 
-subfind =  g3read.read_new(groupbase, ['SPOS','SVEL','GRNR'], 1, is_snap=False, multiple_files=True )) 
+fof =  g3read.read_new(groupbase, ['GPOS','RCRI','MCRI'], 0, is_snap=False, multiple_files=True )
+subfind =  g3read.read_new(groupbase, ['SPOS','SVEL','GRNR'], 1, is_snap=False, multiple_files=True ))
 
 ```
-
-
-
 
 ## Reading from a large run with super indexes
 
@@ -174,12 +171,12 @@ read_particles_in_box(snap_basepath, center, distance, blocks, ptypes, join_ptyp
 
 - `snap_basepath`: is the base path of the snapshot, (e.g. `/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136` )
 - `center`: position of the sphere of radius `distance` that will contains our particles
-- `radius`: searching radius  of particles. Note the routine will return a superset of particiles within `radius`.
+- `radius`: searching radius of particles. Note the routine will return a superset of particiles within `radius`.
 - `blocks`: as `read_new`
 - `ptypes`: as `read_new`
-- `is_snap`:  as `read_new`
-- `join_ptypes`:  as `read_new`
-- return  as `read_new`
+- `is_snap`: as `read_new`
+- `join_ptypes`: as `read_new`
+- return as `read_new`
 
 In this example I first read the position and radius of a FoF object (from the fof files) and then I extract its properties with `read_particles_in_box`.
 
@@ -189,7 +186,7 @@ snapbase = '/HydroSims/Magneticum/Box2/hr_bao/snapdir_136/snap_136'
 groupbase = '/HydroSims/Magneticum/Box2/hr_bao/groups_136/sub_136'
 
 #read FOF data
-fof =  g3read.GadgetFile(groupbase+'.0', is_snap=False) #if you read a FoF/Subfind file, add is_snap = False 
+fof =  g3read.GadgetFile(groupbase+'.0', is_snap=False) #if you read a FoF/Subfind file, add is_snap = False
 halo_positions = fof.read("GPOS",0) #block zero has FoF data, block 1 has SubFind data
 halo_radii = fof.read("RVIR",0)
 
@@ -216,6 +213,29 @@ group_gas_avgtemp =  np.mean(group_gas_masswtemp)/np.sum( group_gas_data['MASS']
 
 Note you could also call `fof =  read_new(groupbase, "GPOS", 0, multiple_files=True, is_snap=False)` to join all FoF catalog files (`sub_136.0`, `sub_136.1`, etc..). You should do it only if you know it can fit your memory.
 
+## Fast Reading of Multiple Gadget Files
+
+`g3fast_read` is a helper function to read selected blocks from multiple Gadget files and concatenate the results into a single dictionary. It also supports particle subsampling through the `reduction` parameter, which can reduce memory usage when processing large snapshots.
+
+```python
+import g3read
+
+stars = g3read.g3fast_read(
+    path="./test/snap_132",
+    is_snap=True,
+    fields=["POS ", "MASS"],
+    ptype=4,
+    maxfile=50,
+    reduction=10,
+)
+```
+
+- `path`: Base path of the Gadget file (e.g. `snap_132`, matching files such as `snap_132.0`, `snap_132.1`, etc.).
+- `maxfile`: Maximum number of files to read. The default `-1` reads all matching files.
+- `reduction`: Keep one particle out of every `reduction` particles across the concatenated files. The default `1` reads all particles.
+
+The function returns a dictionary mapping each requested block name to its concatenated NumPy array.
+
 ## Writing a new snapshot file from scratch
 
 The class `g3read.GadgetFile` has a function `write_block` that will overwrite a block with a new provided array.
@@ -223,9 +243,8 @@ The class `g3read.GadgetFile` has a function `write_block` that will overwrite a
 In this example I recompute the gravitational potentail between particles and store it back in a pre-existing `"POT "` block.
 The pacakge `pp.py` contains a routine to compute the gravitational potential between particles of the snapshot.
 
-
 ```python
-import g3read, pp 
+import g3read, pp
 my_filename = "./test/snap_132"
 my_filename_output "./test/new_snap_132"
 
@@ -236,7 +255,6 @@ potential = pp.gravitational_potential(masses, positions, center).potential
 # note that my_filename_output must already exists: you had to copy snap_123 into ./test/new_snap_132 first
 f.write_block("POT ", -1, potential, filename=my_filename_output)
 ```
-
 
 Here an example on how to create a Gadget snapshot and its header from scratch
 
@@ -278,6 +296,7 @@ f.add_file_block('MASS', 10*4, partlen=4) #add a block of 10*4*3 bytes each of 4
 f.write_block( 'POS ', -1, np.array([[1,2,3]]*30, dtype=np.float32)) #write 30 positions
 f.write_block( 'MASS', -1, np.array([1,2,3,4,5,6,7,7,7,7], dtype=np.float32)) #write 10 masses
 ```
+
 # Looping through haloes, their subhaloes, and IDs with g3matcha.py
 
 `g3matcha.py` (which depends on `g3read`) provides high level functionality to perform for loop over haloes and their subhaloes.
@@ -304,7 +323,7 @@ To loop over haloes use `yield_subhaloes`, with the following parameters:
 - `whith_ids`: if true, each returned subhalo will contian also their IDs. You must provide the parent halo IDs with the keyword `halo_ids`. IDs will be provided with tbe aritificial block `ids`
 - `halo_ids`: halo ids of the parent halo
 
-It returns a list of subhaloes of the given parent haloes. 
+It returns a list of subhaloes of the given parent haloes.
 
 For instance, let's expand the previous example with the reading of subhaloes:
 
@@ -317,7 +336,7 @@ for halo  in  matcha.yield_haloes(groupbase, 0, ihalo_end, blocks=('GLEN', 'MCRI
     #now loop over subhaloes of the parent halo
     for subhalo in  matcha.yield_subhaloes(groupbase, ihalo=halo['ihalo']):
         print('    sub halo information:', subhalo)
-```    
+```
 
 Here below an example that read both FoF and subhalo IDs. Note that we must provide the infromation ` halo_goff = halo['GOFF']` to `yield_subhaloes` in order to grab sub halo IDs.
 
@@ -335,8 +354,8 @@ for halo  in  matcha.yield_haloes(groupbase, 0, with_ids=True, ihalo_end=10, blo
 
 ## Caching of data to speedup SubFind or FoF reading
 
-`g3matcha` routines can be cached  to a dict in order to make reading  by adding `use_cache=True` to function calls.
-You can also cache results to file in order to recycle reads when running the same script multiple time (we all know you'll run your script many many times) by providing  provide a `g3matcha.cache_filename`.
+`g3matcha` routines can be cached to a dict in order to make reading by adding `use_cache=True` to function calls.
+You can also cache results to file in order to recycle reads when running the same script multiple time (we all know you'll run your script many many times) by providing provide a `g3matcha.cache_filename`.
 
 Here how it will look like in the previous example
 
@@ -364,7 +383,7 @@ The example below will find all progenitors of the main halo at snapshot 091.
 
 ```python
 
-#we let g3matcha.find_progenitors_of_halo know how to generate FoF catalog path 
+#we let g3matcha.find_progenitors_of_halo know how to generate FoF catalog path
 groupbase_format = lambda snap_num: './groups_%03d/sub_%03d'%(snap_num, snap_num)
 
 snap_from = 91 # snapshot number where to find the target halo (progenitors will start from snap 62)
@@ -372,8 +391,8 @@ halo_nr = 0 # index of target halo in snap 063
 snap_to=20 #lower snapshot number where to find for progenitors
 
 blocks = ('GPOS','RVIR','GLEN','MVIR') #blocks to be displayed per halo
-    
-# if one progenitor is not found in the previous snapshots, then code will keep search on `_trial_default` snapshots before it. 
+
+# if one progenitor is not found in the previous snapshots, then code will keep search on `_trial_default` snapshots before it.
 _trial_default = 3
 
 min_mass = 1e3. #minimum mass of the oldest progenitor
@@ -392,9 +411,8 @@ for progenitor in g3matcha.find_progenitors_of_halo(
         max_trials = _trial_default,
         blocks=blocks,
         min_mass = min_mass):
-        
+
     print("- ihalo: ", progenitor['ihalo'])
     print("  snap: ", progenitor['snap_from'])
     print("  ids_frac: ", progenitor['ids_frac'])
 ```
-
