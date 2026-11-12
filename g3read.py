@@ -687,10 +687,8 @@ class GadgetFile(object):
         if p_start==None: p_start = self.get_start_part(name, ptype)
         if p_toread > parts:
             p_toread = parts
-        fd = open(self._filename, 'rb')
         if (debug>1):
             printf("partlen=%d"%cur_block.partlen,e=True)
-        fd.seek(cur_block.start + int(cur_block.partlen * p_start), 0)
         # This is just so that we can get a size for the type
         dt = np.dtype(cur_block.data_type)
         if (debug>1):
@@ -698,8 +696,10 @@ class GadgetFile(object):
         n_type = p_toread * cur_block.partlen // dt.itemsize
         if (debug>1):
             print("read dtype=", cur_block.data_type, " n_type=", n_type)
-        data = np.fromfile(
-            fd, dtype=cur_block.data_type, count=n_type, sep='')
+        with open(self._filename, 'rb') as fd:
+            fd.seek(cur_block.start + int(cur_block.partlen * p_start), 0)
+            data = np.fromfile(
+                fd, dtype=cur_block.data_type, count=n_type, sep='')
         if self.endian != '=':
             data = data.byteswap(True)
         return (p_toread, data)
