@@ -8,12 +8,18 @@ float32 = np.float32
 #
 # test 0a: edit a snapshot block and read it
 #
+magic_number = 123.
 shutil.copy('snap_024','snap_024.mod')
 f = g3read.GadgetFile('snap_024')
 ntot = np.sum(f.header.npart[:]) # number of particles in the snapshot
-new_block = np.zeros((ntot, 3)) - 1.
+new_block = np.zeros((ntot, 3)) + magic_number
 f.write_block("POS ", -1, new_block, filename='snap_024.mod')
 assert(np.all(g3read.read_new('snap_024.mod','POS ',-1) == new_block)) # test read
+g3fast_pos = np.concatenate([
+    g3read.g3fast_read('snap_024.mod',True ,['POS '],ptype)['POS ']
+    for ptype in [0,1,2,3,4,5]
+])
+assert(np.all(g3fast_pos == new_block)) # test read
 
 #
 # test 0b: add a snapshot block and read it

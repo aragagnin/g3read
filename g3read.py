@@ -26,8 +26,8 @@ import collections
 import os
 import math
 import sys
-
-import collections
+import re
+from pathlib import Path
 
 try: 
     collectionsAbc = collections.abc
@@ -1615,3 +1615,58 @@ def get_group_base_path(sim_path, snap, snap_prefix='sub_', folder_prefix ='grou
     return get_gadget_base_path(sim_path, snap, snap_prefix=snap_prefix , folder_prefix =folder_prefix, snap_middle=snap_middle,  none_on_error=none_on_error)
 
 
+def g3fast_read(
+    path: str | Path,
+    is_snap: bool,
+    fields: list,
+    ptype: int,
+    maxfile: int = -1,
+    reduction: int = 1,
+) -> dict:
+    if reduction < 1:
+        raise ValueError("reduction must be >= 1")
+    base = Path(path)
+    pattern = re.compile(rf"^{re.escape(base.name)}(?:\.(\d+))?$")
+    files = []
+    for file in base.parent.iterdir():
+        match = pattern.match(file.name)
+        if match and file.is_file():
+            files.append((int(match.group(1) or 0), str(file)))
+    files.sort(key=lambda item: item[0])
+    selected_files = files[:] if maxfile == -1 else files[:maxfile]
+    n_files = len(selected_files)
+    if n_files == 0:
+        return {}
+    readers = [
+        (filename, GadgetFile(filename, is_snap=is_snap))
+        for _, filename in selected_files
+    ]
+    total_rows = sum(int(reader.header.npart[ptype]) for _, reader in readers)
+    data = {}
+    write_rows = {}
+    tot_written = 0
+    for index, (filename, reader) in enumerate(readers, start=1):
+        result = reader.read_new(fields, ptype)
+        file_rows = int(reader.header.npart[ptype])
+        indices = np.arange(file_rows)
+        keep = (indices + tot_written) % reduction == 0
+        tot_written += file_rows
+        for name, arr in result.items():
+            arr = arr[keep]
+            if name not in data:
+                n_selected = (total_rows + reduction - 1) // reduction
+                data[name] = np.empty((n_selected, *arr.shape[1:]), dtype=arr.dtype)
+                write_rows[name] = 0
+            start = write_rows[name]
+            stop = start + len(arr)
+            if stop > data[name].shape[0]:
+                raise ValueError(
+                    f"Block {name!r} contains more rows than the file headers report"
+                )
+            data[name][start:stop] = arr
+            write_rows[name] = stop
+        result = None
+        arr = None
+        # print(f"Successfully read file {index}/{n_files}: {filename} ({file_rows} rows)")
+    data = {name: array[: write_rows[name]] for name, array in data.items()}
+    return data
